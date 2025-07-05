@@ -1,0 +1,20 @@
+/* Custom reusable classes */
+.form-input {
+    @apply w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition;
+}
+
+/* Style for aspect ratio video player */
+.aspect-w-16 {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+}
+.aspect-h-9 {
+    height: 0;
+}
+.aspect-w-16 > iframe {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+}
