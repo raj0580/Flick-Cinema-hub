@@ -7,27 +7,33 @@ const initializePopup = () => {
     if (!popup) return;
     const closeBtn = document.getElementById('close-popup-btn');
     const countdownSpan = document.getElementById('popup-countdown');
+
     const showPopup = () => {
         popup.classList.remove('hidden');
         setTimeout(() => popup.classList.add('show'), 10);
-        let seconds = 5;
+        let seconds = 15;  // <<--- THIS IS THE ONLY CHANGE
         countdownSpan.textContent = seconds;
-        clearInterval(countdownInterval);
+        clearInterval(countdownInterval); 
         countdownInterval = setInterval(() => {
             seconds--;
             countdownSpan.textContent = seconds;
             if (seconds <= 0) hidePopup();
         }, 1000);
     };
+
     const hidePopup = () => {
         clearInterval(countdownInterval);
         popup.classList.remove('show');
         setTimeout(() => popup.classList.add('hidden'), 300);
     };
+
     closeBtn.addEventListener('click', hidePopup);
-    popup.addEventListener('click', (e) => { if (e.target === popup) hidePopup(); });
+    popup.addEventListener('click', (e) => {
+        if (e.target === popup) hidePopup();
+    });
+
     const downloadsContainer = document.getElementById('downloads-container');
-    if (downloadsContainer) {
+    if(downloadsContainer) {
         downloadsContainer.addEventListener('click', (e) => {
             const downloadLink = e.target.closest('.download-link');
             if (downloadLink) {
@@ -92,10 +98,10 @@ const renderHomepage = async () => {
         displayMovies(movies);
         ['search-input', 'genre-filter', 'year-filter', 'lang-filter'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.addEventListener('input', filterMovies);
+            if(el) el.addEventListener('input', filterMovies);
         });
     } catch (error) {
-        if (loadingSpinner) loadingSpinner.innerHTML = `<p class="text-red-500">Failed to load movies.</p>`;
+        if(loadingSpinner) loadingSpinner.innerHTML = `<p class="text-red-500">Failed to load movies.</p>`;
     }
 };
 
@@ -114,8 +120,6 @@ const renderMovieDetailPage = async () => {
         if (!movie) return errorMessage.style.display = 'block';
 
         document.title = `${movie.title} - Flick Cinema`;
-        
-        // --- THIS IS THE CRITICAL FIX - THIS LINE WAS ACCIDENTALLY COMMENTED OUT ---
         ['poster', 'title', 'type', 'description', 'year', 'language'].forEach(id => {
             const el = document.getElementById(`movie-${id}`);
             if (el) {
@@ -123,16 +127,16 @@ const renderMovieDetailPage = async () => {
                 else el.textContent = movie[id] || (id === 'type' ? 'Movie' : '');
             }
         });
-
+        
         document.getElementById('movie-genres').innerHTML = (movie.genres || []).map(g => `<span class="bg-gray-700 text-cyan-300 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">${g}</span>`).join('');
         document.getElementById('movie-tags').innerHTML = (movie.tags || []).map(t => `<span class="bg-gray-600 text-gray-300 text-xs font-medium mr-2 px-2.5 py-0.5 rounded">${t}</span>`).join('');
-        
+
         const trailerContainer = document.getElementById('trailer-container');
         if (movie.trailerUrl) {
             const videoId = movie.trailerUrl.split('v=')[1]?.split('&')[0] || movie.trailerUrl.split('/').pop();
             trailerContainer.innerHTML = `<iframe class="absolute top-0 left-0 w-full h-full" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
         }
-        
+
         document.getElementById('screenshots-grid').innerHTML = (movie.screenshots || []).map(url => `<a href="${url}" target="_blank"><img src="${url}" class="w-full h-auto rounded-lg object-cover" alt="Screenshot"></a>`).join('');
 
         const downloadsContainer = document.getElementById('downloads-container');
@@ -159,15 +163,14 @@ const renderMovieDetailPage = async () => {
 
     } catch (error) {
         console.error("Error loading movie details:", error);
-        if (loadingSpinner) loadingSpinner.style.display = 'none';
-        if (errorMessage) errorMessage.style.display = 'block';
+        if(loadingSpinner) loadingSpinner.style.display = 'none';
+        if(errorMessage) errorMessage.style.display = 'block';
     }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('movie-grid')) {
-        renderHomepage();
-    } else if (document.getElementById('movie-content')) {
+    if (document.getElementById('movie-grid')) renderHomepage();
+    else if (document.getElementById('movie-content')) {
         renderMovieDetailPage();
         initializePopup();
     }
