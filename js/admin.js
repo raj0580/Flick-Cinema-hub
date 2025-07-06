@@ -1,5 +1,8 @@
 import { getMovies, addMovie, updateMovie, deleteMovie, getMovieById } from './db.js';
 
+// --- NEW --- ImgBB API Key
+const IMGBB_API_KEY = '5090ec8c335078581b53f917f9657083';
+
 document.addEventListener('DOMContentLoaded', () => {
     const movieForm = document.getElementById('movie-form');
     const moviesList = document.getElementById('movies-list');
@@ -11,6 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const addLinkBtn = document.getElementById('add-link-btn');
     const downloadLinksContainer = document.getElementById('download-links-container');
     
+    // --- NEW --- DOM Elements for poster upload
+    const posterUploadInput = document.getElementById('poster-upload');
+    const posterUrlInput = document.getElementById('poster-url');
+    const uploadStatus = document.getElementById('upload-status');
+    const posterPreview = document.getElementById('poster-preview');
+
     let editMode = false;
 
     const showToast = (message, isError = false) => {
@@ -18,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const toastMessage = document.getElementById('toast-message');
         
         toastMessage.textContent = message;
-        toast.className = 'fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transition-all duration-300'; // reset classes
+        toast.className = 'fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transition-all duration-300';
         toast.classList.add(isError ? 'bg-red-500' : 'bg-green-500');
         
         toast.classList.remove('opacity-0', 'translate-y-full');
@@ -37,7 +46,13 @@ document.addEventListener('DOMContentLoaded', () => {
         editMode = false;
         cancelEditBtn.classList.add('hidden');
         downloadLinksContainer.innerHTML = '';
-        addDownloadLinkField(); // Add one empty link field
+        addDownloadLinkField();
+
+        // --- NEW --- Reset poster UI
+        posterPreview.classList.add('hidden');
+        posterPreview.src = '';
+        uploadStatus.textContent = '';
+        posterUploadInput.value = ''; // Clear the file input
     };
 
     const populateForm = (movie) => {
@@ -49,13 +64,19 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('title').value = movie.title;
         document.getElementById('year').value = movie.year;
         document.getElementById('description').value = movie.description;
-        document.getElementById('poster-url').value = movie.posterUrl;
         document.getElementById('trailer-url').value = movie.trailerUrl;
         document.getElementById('language').value = movie.language;
         document.getElementById('quality').value = movie.quality || '';
         document.getElementById('tags').value = movie.tags.join(', ');
         document.getElementById('screenshots').value = movie.screenshots.join('\n');
         
+        // --- NEW --- Populate poster URL and preview
+        posterUrlInput.value = movie.posterUrl;
+        if (movie.posterUrl) {
+            posterPreview.src = movie.posterUrl;
+            posterPreview.classList.remove('hidden');
+        }
+
         const genresSelect = document.getElementById('genres');
         Array.from(genresSelect.options).forEach(option => {
             option.selected = movie.genres.includes(option.value);
@@ -63,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         downloadLinksContainer.innerHTML = '';
         movie.downloadLinks.forEach(link => addDownloadLinkField(link.quality, link.size, link.url));
-        if (movie.downloadLinks.length === 0) {
+        if (!movie.downloadLinks || movie.downloadLinks.length === 0) {
             addDownloadLinkField();
         }
 
@@ -107,8 +128,55 @@ document.addEventListener('DOMContentLoaded', () => {
         downloadLinksContainer.appendChild(div);
     };
 
-    addLinkBtn.addEventListener('click', () => addDownloadLinkField());
+    // --- NEW --- Function to handle ImgBB upload
+    const handlePosterUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
 
+        uploadStatus.textContent = 'Uploading...';
+        uploadStatus.style.color = '#9CA3AF'; // gray-400
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+            const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}&expiration=600`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const imageUrl = result.data.url;
+                posterUrlInput.value = imageUrl; // Auto-fill the URL input
+                posterPreview.src = imageUrl;
+                posterPreview.classList.remove('hidden');
+                uploadStatus.textContent = 'Upload successful!';
+                uploadStatus.style.color = '#10B981'; // green-500
+            } else {
+                throw new Error(result.error.message || 'Unknown upload error');
+            }
+        } catch (error) {
+            console.error('ImgBB Upload Error:', error);
+            uploadStatus.textContent = `Upload failed: ${error.message}`;
+            uploadStatus.style.color = '#EF4444'; // red-500
+        }
+    };
+    
+    // --- NEW --- Function to update preview from manual URL
+    const updatePreviewFromUrl = () => {
+        const url = posterUrlInput.value.trim();
+        if (url) {
+            posterPreview.src = url;
+            posterPreview.classList.remove('hidden');
+        } else {
+            posterPreview.classList.add('hidden');
+        }
+    };
+
+
+    addLinkBtn.addEventListener('click', () => addDownloadLinkField());
     downloadLinksContainer.addEventListener('click', (e) => {
         if (e.target.classList.contains('remove-link-btn')) {
             e.target.parentElement.remove();
@@ -118,37 +186,27 @@ document.addEventListener('DOMContentLoaded', () => {
     movieForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const getSelectedGenres = () => {
-            const select = document.getElementById('genres');
-            return [...select.options].filter(option => option.selected).map(option => option.value);
-        }
-
-        const getDownloadLinks = () => {
-            const links = [];
-            const linkDivs = downloadLinksContainer.querySelectorAll('.flex');
-            linkDivs.forEach(div => {
-                const quality = div.querySelector('.quality-input').value.trim();
-                const size = div.querySelector('.size-input').value.trim();
-                const url = div.querySelector('.url-input').value.trim();
-                if (quality && url) {
-                    links.push({ quality, size, url });
-                }
-            });
-            return links;
+        if (!posterUrlInput.value) {
+            showToast('A poster URL is required. Please upload an image or paste a URL.', true);
+            return;
         }
 
         const movieData = {
             title: document.getElementById('title').value,
             year: Number(document.getElementById('year').value),
             description: document.getElementById('description').value,
-            posterUrl: document.getElementById('poster-url').value,
+            posterUrl: posterUrlInput.value, // The final URL comes from this input
             trailerUrl: document.getElementById('trailer-url').value,
             language: document.getElementById('language').value,
             quality: document.getElementById('quality').value.trim(),
-            genres: getSelectedGenres(),
+            genres: [...document.getElementById('genres').options].filter(o => o.selected).map(o => o.value),
             tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(Boolean),
             screenshots: document.getElementById('screenshots').value.split('\n').map(url => url.trim()).filter(Boolean),
-            downloadLinks: getDownloadLinks()
+            downloadLinks: [...downloadLinksContainer.querySelectorAll('.flex')].map(div => ({
+                quality: div.querySelector('.quality-input').value.trim(),
+                size: div.querySelector('.size-input').value.trim(),
+                url: div.querySelector('.url-input').value.trim(),
+            })).filter(link => link.quality && link.url)
         };
         
         try {
@@ -188,6 +246,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     cancelEditBtn.addEventListener('click', resetForm);
+    
+    // --- NEW --- Add event listeners for the poster functionality
+    posterUploadInput.addEventListener('change', handlePosterUpload);
+    posterUrlInput.addEventListener('input', updatePreviewFromUrl);
 
     // Initial Load
     renderMoviesTable();
