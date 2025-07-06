@@ -3,14 +3,15 @@ import { getMovies, getMovieById } from './db.js';
 const renderMovieCard = (movie) => `
     <a href="movie.html?id=${movie.id}" class="group block bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-cyan-500/50 transition-shadow duration-300">
         <div class="relative">
-            <img src="${movie.posterUrl}" alt="${movie.title}" class="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-300">
+            <img src="${movie.posterUrl}" alt="${movie.title}" class="w-full h-auto aspect-[2/3] object-cover transform group-hover:scale-105 transition-transform duration-300">
             <div class="absolute top-2 right-2 bg-cyan-500 text-white text-xs font-bold px-2 py-1 rounded">${movie.quality || 'HD'}</div>
+            ${movie.type === 'Web Series' ? '<div class="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">SERIES</div>' : ''}
         </div>
         <div class="p-3">
             <h3 class="text-md font-bold truncate group-hover:text-cyan-400">${movie.title}</h3>
             <div class="text-xs text-gray-400 mt-1">
                 <span>${movie.year}</span> •
-                <span class="truncate">${movie.genres.join(', ')}</span>
+                <span class="truncate">${(movie.genres || []).join(', ')}</span>
             </div>
         </div>
     </a>
@@ -23,18 +24,17 @@ const renderHomepage = async () => {
 
     try {
         const movies = await getMovies();
-        let allMovies = movies.sort((a, b) => b.year - a.year); // Sort by most recent year
+        let allMovies = movies.sort((a, b) => b.year - a.year);
 
         loadingSpinner.style.display = 'none';
-
         if (allMovies.length === 0) {
             noResults.style.display = 'block';
             return;
         }
 
         const populateFilters = (movies) => {
-            const genres = [...new Set(movies.flatMap(m => m.genres))].sort();
-            const years = [...new Set(movies.map(m => m.year))].sort((a,b) => b-a);
+            const genres = [...new Set(movies.flatMap(m => m.genres || []))].sort();
+            const years = [...new Set(movies.map(m => m.year))].sort((a, b) => b - a);
             const languages = [...new Set(movies.map(m => m.language))].sort();
 
             const genreFilter = document.getElementById('genre-filter');
@@ -49,7 +49,7 @@ const renderHomepage = async () => {
         const displayMovies = (moviesToDisplay) => {
             movieGrid.innerHTML = moviesToDisplay.map(renderMovieCard).join('');
             noResults.style.display = moviesToDisplay.length === 0 ? 'block' : 'none';
-        }
+        };
 
         const filterMovies = () => {
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
@@ -58,18 +58,17 @@ const renderHomepage = async () => {
             const selectedLang = document.getElementById('lang-filter').value;
 
             const filtered = allMovies.filter(movie => {
-                const matchesSearch = movie.title.toLowerCase().includes(searchTerm);
-                const matchesGenre = !selectedGenre || movie.genres.includes(selectedGenre);
-                const matchesYear = !selectedYear || movie.year == selectedYear;
-                const matchesLang = !selectedLang || movie.language === selectedLang;
-                return matchesSearch && matchesGenre && matchesYear && matchesLang;
+                const genres = movie.genres || [];
+                return movie.title.toLowerCase().includes(searchTerm) &&
+                       (!selectedGenre || genres.includes(selectedGenre)) &&
+                       (!selectedYear || movie.year == selectedYear) &&
+                       (!selectedLang || movie.language === selectedLang);
             });
             displayMovies(filtered);
-        }
+        };
 
         populateFilters(allMovies);
         displayMovies(allMovies);
-
         document.getElementById('search-input').addEventListener('input', filterMovies);
         document.getElementById('genre-filter').addEventListener('change', filterMovies);
         document.getElementById('year-filter').addEventListener('change', filterMovies);
@@ -77,18 +76,14 @@ const renderHomepage = async () => {
 
     } catch (error) {
         console.error("Error loading movies:", error);
-        loadingSpinner.innerHTML = `<p class="text-red-500">Failed to load movies. Please try again later.</p>`;
+        loadingSpinner.innerHTML = `<p class="text-red-500">Failed to load movies.</p>`;
     }
 };
 
 const renderMovieDetailPage = async () => {
     const params = new URLSearchParams(window.location.search);
     const movieId = params.get('id');
-
-    if (!movieId) {
-        window.location.href = 'index.html';
-        return;
-    }
+    if (!movieId) return window.location.href = 'index.html';
 
     const loadingSpinner = document.getElementById('loading-spinner');
     const movieContent = document.getElementById('movie-content');
@@ -97,54 +92,50 @@ const renderMovieDetailPage = async () => {
     try {
         const movie = await getMovieById(movieId);
         loadingSpinner.style.display = 'none';
+        if (!movie) return errorMessage.style.display = 'block';
 
-        if (!movie) {
-            errorMessage.style.display = 'block';
-            return;
-        }
-
-        // Update page title
         document.title = `${movie.title} - Flick Cinema`;
-
-        // Populate content
         document.getElementById('movie-poster').src = movie.posterUrl;
         document.getElementById('movie-poster').alt = movie.title;
         document.getElementById('movie-title').textContent = movie.title;
+        document.getElementById('movie-type').textContent = movie.type || 'Movie';
         document.getElementById('movie-description').textContent = movie.description;
         document.getElementById('movie-year').textContent = movie.year;
         document.getElementById('movie-language').textContent = movie.language;
-
+        
         const genresContainer = document.getElementById('movie-genres');
-        genresContainer.innerHTML = movie.genres.map(g => `<span class="bg-gray-700 text-cyan-300 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">${g}</span>`).join('');
+        genresContainer.innerHTML = (movie.genres || []).map(g => `<span class="bg-gray-700 text-cyan-300 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">${g}</span>`).join('');
         
         const tagsContainer = document.getElementById('movie-tags');
-        tagsContainer.innerHTML = movie.tags.map(t => `<span class="bg-gray-600 text-gray-300 text-xs font-medium mr-2 px-2.5 py-0.5 rounded">${t}</span>`).join('');
+        tagsContainer.innerHTML = (movie.tags || []).map(t => `<span class="bg-gray-600 text-gray-300 text-xs font-medium mr-2 px-2.5 py-0.5 rounded">${t}</span>`).join('');
 
-        // Trailer
         const trailerContainer = document.getElementById('trailer-container');
         if (movie.trailerUrl) {
             const videoId = movie.trailerUrl.split('v=')[1]?.split('&')[0] || movie.trailerUrl.split('/').pop();
-            trailerContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-        } else {
-            trailerContainer.innerHTML = '<p class="text-gray-400">No trailer available.</p>';
-        }
-        
-        // Screenshots
-        const screenshotsGrid = document.getElementById('screenshots-grid');
-        if (movie.screenshots && movie.screenshots.length > 0) {
-            screenshotsGrid.innerHTML = movie.screenshots.map(url => `
-                <a href="${url}" target="_blank">
-                    <img src="${url}" class="w-full h-auto rounded-lg object-cover" alt="Screenshot">
-                </a>
-            `).join('');
-        } else {
-            screenshotsGrid.innerHTML = '<p class="text-gray-400">No screenshots available.</p>';
+            trailerContainer.innerHTML = `<iframe class="absolute top-0 left-0 w-full h-full" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
         }
 
-        // Download Links
-        const downloadLinksContainer = document.getElementById('download-links');
-        if (movie.downloadLinks && movie.downloadLinks.length > 0) {
-            downloadLinksContainer.innerHTML = movie.downloadLinks.map(link => `
+        const screenshotsGrid = document.getElementById('screenshots-grid');
+        screenshotsGrid.innerHTML = (movie.screenshots || []).map(url => `<a href="${url}" target="_blank"><img src="${url}" class="w-full h-auto rounded-lg object-cover" alt="Screenshot"></a>`).join('');
+
+        const downloadsContainer = document.getElementById('downloads-container');
+        if (movie.type === 'Web Series' && movie.episodes?.length) {
+            downloadsContainer.innerHTML = movie.episodes.map(episode => `
+                <details class="bg-gray-800 rounded-lg overflow-hidden">
+                    <summary class="font-bold text-lg p-4 bg-gray-700/50 hover:bg-gray-700">${episode.episodeTitle || 'Episode'}</summary>
+                    <div class="p-4 space-y-3">
+                        ${episode.downloadLinks.map(link => `
+                            <a href="${link.url}" target="_blank" class="flex justify-between items-center bg-gray-900 hover:bg-gray-800 p-3 rounded-lg transition">
+                                <span class="font-semibold text-cyan-400">${link.quality}</span>
+                                <span class="text-sm text-gray-400">${link.size}</span>
+                                <span class="bg-cyan-500 text-white text-sm font-bold py-1 px-3 rounded">Download</span>
+                            </a>
+                        `).join('') || '<p class="text-gray-400">No links for this episode.</p>'}
+                    </div>
+                </details>
+            `).join('');
+        } else if (movie.downloadLinks?.length) {
+            downloadsContainer.innerHTML = movie.downloadLinks.map(link => `
                 <a href="${link.url}" target="_blank" class="flex justify-between items-center bg-gray-800 hover:bg-gray-700 p-3 rounded-lg transition">
                     <span class="font-semibold text-cyan-400">${link.quality}</span>
                     <span class="text-sm text-gray-400">${link.size}</span>
@@ -152,7 +143,7 @@ const renderMovieDetailPage = async () => {
                 </a>
             `).join('');
         } else {
-             downloadLinksContainer.innerHTML = '<p class="text-gray-400">No download links available.</p>';
+            downloadsContainer.innerHTML = '<p class="text-gray-400">No download links available.</p>';
         }
 
         movieContent.style.display = 'block';
@@ -164,8 +155,6 @@ const renderMovieDetailPage = async () => {
     }
 };
 
-
-// Run the correct function based on the page
 if (document.getElementById('movie-grid')) {
     renderHomepage();
 } else if (document.getElementById('movie-content')) {
