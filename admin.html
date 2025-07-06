@@ -12,13 +12,20 @@
         .form-input::placeholder { color: #9CA3AF; }
         .form-input:focus { outline: none; border-color: #06b6d4; box-shadow: 0 0 0 2px #06b6d4; }
         .upload-field { border: 1px solid #374151; border-radius: 0.5rem; padding: 1rem; background-color: rgba(0,0,0,0.2); }
+        
+        /* STYLES FOR GENRE CHECKBOXES */
+        .genre-checkbox-label {
+            display: inline-flex; align-items: center; cursor: pointer; padding: 0.25rem 0.75rem;
+            border-radius: 9999px; border: 1px solid #4B5563; background-color: #374151; transition: all 0.2s;
+        }
+        .genre-checkbox-label:hover { border-color: #6b7280; }
+        .genre-checkbox:checked + .genre-checkbox-label { background-color: #06b6d4; border-color: #0891b2; color: white; }
+        .genre-checkbox { display: none; }
     </style>
 </head>
 <body class="bg-gray-900 text-white font-sans">
     
-    <div id="toast" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 translate-y-full transition-all duration-300">
-        <p id="toast-message"></p>
-    </div>
+    <div id="toast" class="fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 translate-y-full transition-all duration-300"></div>
 
     <div id="header-placeholder"></div>
 
@@ -26,10 +33,26 @@
         <h1 class="text-3xl font-bold mb-6 border-l-4 border-cyan-400 pl-4">Admin Dashboard</h1>
 
         <section class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
-            <h2 id="form-title" class="text-2xl font-bold mb-4">Add New Movie</h2>
+            <h2 id="form-title" class="text-2xl font-bold mb-4">Add New Content</h2>
             <form id="movie-form">
                 <input type="hidden" id="movie-id">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+
+                <!-- NEW TYPE SELECTOR -->
+                <div class="mb-6">
+                    <label class="block text-gray-300 mb-2 font-semibold">Content Type</label>
+                    <div class="flex gap-6">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="type" id="type-movie" value="Movie" checked class="form-radio bg-gray-700 border-gray-600 text-cyan-500 focus:ring-cyan-500">
+                            <span>Movie</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="type" id="type-series" value="Web Series" class="form-radio bg-gray-700 border-gray-600 text-cyan-500 focus:ring-cyan-500">
+                            <span>Web Series</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                     <!-- Column 1 -->
                     <div>
                         <div class="mb-4">
@@ -38,7 +61,7 @@
                         </div>
                         
                         <div class="mb-4 upload-field">
-                            <label class="block text-gray-200 mb-2 font-semibold">Movie Poster</label>
+                            <label class="block text-gray-200 mb-2 font-semibold">Poster</label>
                             <div class="flex items-center gap-4">
                                <label class="poster-upload-btn cursor-pointer inline-block bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded transition-colors">Choose & Upload</label>
                                <input type="file" class="poster-upload-input hidden" accept="image/*">
@@ -46,7 +69,7 @@
                             </div>
                             <p class="text-center my-3 text-gray-500 text-xs font-bold">OR</p>
                             <div>
-                                <label for="poster-url" class="block text-gray-300 mb-1 text-sm">Paste Image URL directly</label>
+                                <label for="poster-url" class="block text-gray-300 mb-1 text-sm">Paste Image URL</label>
                                 <input type="url" id="poster-url" class="form-input w-full poster-url-input" placeholder="https://example.com/image.jpg">
                             </div>
                             <div class="mt-4 text-center">
@@ -77,53 +100,59 @@
                             <label for="description" class="block text-gray-300 mb-1">Description</label>
                             <textarea id="description" rows="4" class="form-input w-full" required></textarea>
                         </div>
+                         
                          <div class="mb-4">
-                            <label for="genres" class="block text-gray-300 mb-1">Genres</label>
-                            <select id="genres" multiple class="form-input w-full h-24">
-                                <option>Action</option><option>Adventure</option><option>Animation</option><option>Comedy</option><option>Crime</option><option>Documentary</option><option>Drama</option><option>Family</option><option>Fantasy</option><option>History</option><option>Horror</option><option>Music</option><option>Mystery</option><option>Romance</option><option>Sci-Fi</option><option>Thriller</option><option>War</option><option>Western</option>
-                            </select>
+                            <label class="block text-gray-300 mb-2">Genres</label>
+                            <div id="genres-container" class="p-3 bg-gray-900/50 border border-gray-700 rounded-lg flex flex-wrap gap-2"></div>
                         </div>
+
                         <div class="mb-4">
                             <label for="tags" class="block text-gray-300 mb-1">Tags (comma-separated)</label>
                             <input type="text" id="tags" class="form-input w-full">
                         </div>
 
-                        <!-- NEW DYNAMIC SCREENSHOTS SECTION -->
-                         <div class="mb-4">
+                        <div class="mb-4">
                             <h3 class="text-lg font-semibold mb-2">Screenshots</h3>
-                            <div id="screenshots-container" class="space-y-4">
-                                <!-- Screenshot uploaders will be injected here -->
-                            </div>
+                            <div id="screenshots-container" class="space-y-4"></div>
                             <button type="button" id="add-screenshot-btn" class="mt-4 text-sm bg-gray-600 hover:bg-gray-700 py-1 px-3 rounded">+ Add Screenshot</button>
                         </div>
                     </div>
                 </div>
 
-                 <div class="mt-6 border-t border-gray-700 pt-6">
-                     <h3 class="text-lg font-semibold mb-2">Download Links</h3>
-                     <div id="download-links-container" class="space-y-4"></div>
-                     <button type="button" id="add-link-btn" class="mt-4 text-sm bg-gray-600 hover:bg-gray-700 py-1 px-3 rounded">+ Add Download Link</button>
+                 <div id="downloads-section" class="mt-6 border-t border-gray-700 pt-6">
+                    <!-- MOVIE DOWNLOADS SECTION (Default) -->
+                    <div id="movie-downloads-section">
+                        <h3 class="text-lg font-semibold mb-2">Movie Download Links</h3>
+                        <div id="movie-links-container" class="space-y-4"></div>
+                        <button type="button" id="add-movie-link-btn" class="mt-4 text-sm bg-gray-600 hover:bg-gray-700 py-1 px-3 rounded">+ Add Link</button>
+                    </div>
+
+                    <!-- WEB SERIES DOWNLOADS SECTION (Hidden by default) -->
+                    <div id="series-downloads-section" class="hidden">
+                        <h3 class="text-lg font-semibold mb-2">Series Episodes</h3>
+                        <div id="episodes-container" class="space-y-6"></div>
+                        <button type="button" id="add-episode-btn" class="mt-4 text-sm bg-blue-600 hover:bg-blue-700 py-2 px-4 rounded font-bold">+ Add Episode</button>
+                    </div>
                  </div>
 
                 <div class="mt-8 flex gap-4">
-                    <button type="submit" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-6 rounded">Save Movie</button>
+                    <button type="submit" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-6 rounded">Save Content</button>
                     <button type="button" id="cancel-edit-btn" class="hidden bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded">Cancel Edit</button>
                 </div>
             </form>
         </section>
 
-        <!-- Existing Movies List -->
+        <!-- Existing Content List -->
         <section>
-            <h2 class="text-2xl font-bold mb-4">Existing Movies</h2>
+            <h2 class="text-2xl font-bold mb-4">Existing Content</h2>
             <div id="loading-spinner" class="text-center py-10"></div>
             <div class="overflow-x-auto bg-gray-800 rounded-lg">
-                <table id="movies-table" class="w-full text-left hidden"><thead class="bg-gray-700"><tr><th class="p-3">Poster</th><th class="p-3">Title</th><th class="p-3">Year</th><th class="p-3">Actions</th></tr></thead><tbody id="movies-list"></tbody></table>
+                <table id="movies-table" class="w-full text-left hidden"><thead class="bg-gray-700"><tr><th class="p-3">Poster</th><th class="p-3">Title</th><th class="p-3">Year</th><th class="p-3">Type</th><th class="p-3">Actions</th></tr></thead><tbody id="movies-list"></tbody></table>
             </div>
         </section>
     </main>
 
     <div id="footer-placeholder"></div>
-
     <script type="module" src="js/auth.js"></script>
     <script type="module" src="js/admin.js"></script>
     <script type="module" src="js/header-footer.js"></script>
