@@ -119,31 +119,53 @@ const renderMovieDetailPage = async () => {
         screenshotsGrid.innerHTML = (movie.screenshots || []).map(url => `<a href="${url}" target="_blank"><img src="${url}" class="w-full h-auto rounded-lg object-cover" alt="Screenshot"></a>`).join('');
 
         const downloadsContainer = document.getElementById('downloads-container');
-        if (movie.type === 'Web Series' && movie.episodes?.length) {
-            downloadsContainer.innerHTML = movie.episodes.map(episode => `
-                <details class="bg-gray-800 rounded-lg overflow-hidden">
-                    <summary class="font-bold text-lg p-4 bg-gray-700/50 hover:bg-gray-700">${episode.episodeTitle || 'Episode'}</summary>
-                    <div class="p-4 space-y-3">
-                        ${episode.downloadLinks.map(link => `
-                            <a href="${link.url}" target="_blank" class="flex justify-between items-center bg-gray-900 hover:bg-gray-800 p-3 rounded-lg transition">
-                                <span class="font-semibold text-cyan-400">${link.quality}</span>
-                                <span class="text-sm text-gray-400">${link.size}</span>
-                                <span class="bg-cyan-500 text-white text-sm font-bold py-1 px-3 rounded">Download</span>
-                            </a>
-                        `).join('') || '<p class="text-gray-400">No links for this episode.</p>'}
-                    </div>
-                </details>
-            `).join('');
-        } else if (movie.downloadLinks?.length) {
-            downloadsContainer.innerHTML = movie.downloadLinks.map(link => `
+        let downloadsHtml = '';
+
+        // --- CORRECTED LOGIC STARTS HERE ---
+
+        // Check for Movie/Full Pack links first
+        if (movie.downloadLinks && movie.downloadLinks.length > 0) {
+            if (movie.type === 'Web Series') {
+                downloadsHtml += `<h3 class="text-xl font-bold mb-3 text-gray-300">Full Season Pack</h3>`;
+            }
+            downloadsHtml += movie.downloadLinks.map(link => `
                 <a href="${link.url}" target="_blank" class="flex justify-between items-center bg-gray-800 hover:bg-gray-700 p-3 rounded-lg transition">
                     <span class="font-semibold text-cyan-400">${link.quality}</span>
                     <span class="text-sm text-gray-400">${link.size}</span>
                     <span class="bg-cyan-500 text-white text-sm font-bold py-1 px-3 rounded">Download</span>
                 </a>
             `).join('');
-        } else {
+        }
+
+        // Check for individual episodes (for Web Series)
+        if (movie.type === 'Web Series' && movie.episodes && movie.episodes.length > 0) {
+            // Add a separator if there were also full pack links
+            if (downloadsHtml !== '') {
+                downloadsHtml += `<hr class="border-gray-700 my-6">`;
+            }
+            downloadsHtml += `<h3 class="text-xl font-bold mb-3 text-gray-300">Individual Episodes</h3>`;
+            downloadsHtml += movie.episodes.map(episode => `
+                <details class="bg-gray-800 rounded-lg overflow-hidden mb-3">
+                    <summary class="font-bold text-lg p-4 bg-gray-700/50 hover:bg-gray-700">${episode.episodeTitle || 'Episode'}</summary>
+                    <div class="p-4 space-y-3">
+                        ${(episode.downloadLinks && episode.downloadLinks.length > 0) ? episode.downloadLinks.map(link => `
+                            <a href="${link.url}" target="_blank" class="flex justify-between items-center bg-gray-900 hover:bg-gray-800 p-3 rounded-lg transition">
+                                <span class="font-semibold text-cyan-400">${link.quality}</span>
+                                <span class="text-sm text-gray-400">${link.size}</span>
+                                <span class="bg-cyan-500 text-white text-sm font-bold py-1 px-3 rounded">Download</span>
+                            </a>
+                        `).join('') : '<p class="text-gray-400">No links for this episode.</p>'}
+                    </div>
+                </details>
+            `).join('');
+        }
+        
+        // --- CORRECTED LOGIC ENDS HERE ---
+
+        if (downloadsHtml === '') {
             downloadsContainer.innerHTML = '<p class="text-gray-400">No download links available.</p>';
+        } else {
+            downloadsContainer.innerHTML = downloadsHtml;
         }
 
         movieContent.style.display = 'block';
