@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const genresContainer = document.getElementById('genres-container');
     const screenshotsContainer = document.getElementById('screenshots-container');
     const addScreenshotBtn = document.getElementById('add-screenshot-btn');
-    const movieDownloadsSection = document.getElementById('movie-downloads-section');
     const seriesDownloadsSection = document.getElementById('series-downloads-section');
     const movieLinksContainer = document.getElementById('movie-links-container');
     const addMovieLinkBtn = document.getElementById('add-movie-link-btn');
@@ -37,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const resetForm = () => {
         movieForm.reset();
-        document.getElementById('type-movie').checked = true;
+        document.querySelector('input[name="type"][value="Movie"]').checked = true;
         handleTypeChange();
         movieIdInput.value = '';
         formTitle.textContent = 'Add New Content';
@@ -87,26 +86,21 @@ document.addEventListener('DOMContentLoaded', () => {
         (content.screenshots || []).forEach(url => addScreenshotField(url));
         if (screenshotsContainer.childElementCount === 0) addScreenshotField();
 
+        movieLinksContainer.innerHTML = '';
+        (content.downloadLinks || []).forEach(link => addMovieDownloadLinkField(link.quality, link.size, link.url));
+        if (movieLinksContainer.childElementCount === 0) addMovieDownloadLinkField();
+        
         if (selectedType === 'Web Series') {
             episodesContainer.innerHTML = '';
             (content.episodes || []).forEach(ep => addEpisodeField(ep.episodeTitle, ep.downloadLinks));
             if (episodesContainer.childElementCount === 0) addEpisodeField();
-        } else {
-            movieLinksContainer.innerHTML = '';
-            (content.downloadLinks || []).forEach(link => addMovieDownloadLinkField(link.quality, link.size, link.url));
-            if (movieLinksContainer.childElementCount === 0) addMovieDownloadLinkField();
         }
 
         window.scrollTo(0, 0);
     };
 
     const renderGenreCheckboxes = () => {
-        genresContainer.innerHTML = ALL_GENRES.map(genre => `
-            <div>
-                <input type="checkbox" id="genre-${genre.toLowerCase()}" name="genre" value="${genre}" class="genre-checkbox">
-                <label for="genre-${genre.toLowerCase()}" class="genre-checkbox-label">${genre}</label>
-            </div>
-        `).join('');
+        genresContainer.innerHTML = ALL_GENRES.map(genre => `<div><input type="checkbox" id="genre-${genre.toLowerCase()}" value="${genre}" class="genre-checkbox"><label for="genre-${genre.toLowerCase()}" class="genre-checkbox-label">${genre}</label></div>`).join('');
     };
 
     // --- DYNAMIC FIELD FUNCTIONS ---
@@ -121,14 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const episodeId = `ep-${Date.now()}`;
         const div = document.createElement('div');
         div.className = 'episode-field p-4 border border-gray-700 rounded-lg bg-gray-900/50';
-        div.innerHTML = `
-            <div class="flex justify-between items-center mb-4">
-                <input type="text" placeholder="Episode Title (e.g., S01E01)" value="${title}" class="form-input w-full mr-4 episode-title-input">
-                <button type="button" class="remove-btn bg-red-600 hover:bg-red-700 text-white p-2 rounded">Remove Ep</button>
-            </div>
-            <div class="space-y-2 episode-links-container"></div>
-            <button type="button" data-container="${episodeId}" class="add-episode-link-btn mt-2 text-sm bg-gray-600 hover:bg-gray-700 py-1 px-3 rounded">+ Add Link</button>
-        `;
+        div.innerHTML = `<div class="flex justify-between items-center mb-4"><input type="text" placeholder="Episode Title (e.g., S01E01)" value="${title}" class="form-input w-full mr-4 episode-title-input"><button type="button" class="remove-btn bg-red-600 hover:bg-red-700 text-white p-2 rounded">Remove Ep</button></div><div class="space-y-2 episode-links-container"></div><button type="button" data-container="${episodeId}" class="add-episode-link-btn mt-2 text-sm bg-gray-600 hover:bg-gray-700 py-1 px-3 rounded">+ Add Link</button>`;
         div.querySelector('.episode-links-container').id = episodeId;
         episodesContainer.appendChild(div);
         
@@ -159,31 +146,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const handleImageUpload = async (file, urlInput, previewEl, statusEl) => {
         if (!file) return;
         statusEl.textContent = 'Uploading...';
-        statusEl.style.color = '#9CA3AF';
         const formData = new FormData();
         formData.append('image', file);
         try {
             const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
             const result = await response.json();
             if (result.success) {
-                const imageUrl = result.data.url;
-                urlInput.value = imageUrl;
-                previewEl.src = imageUrl;
+                urlInput.value = result.data.url;
+                previewEl.src = result.data.url;
                 previewEl.classList.remove('hidden');
                 statusEl.textContent = 'Success!';
-                statusEl.style.color = '#10B981';
             } else { throw new Error(result.error.message); }
         } catch (error) {
             statusEl.textContent = 'Upload failed!';
-            statusEl.style.color = '#EF4444';
         }
     };
 
     // --- EVENT LISTENERS ---
     const handleTypeChange = () => {
-        const isMovie = document.getElementById('type-movie').checked;
-        movieDownloadsSection.classList.toggle('hidden', !isMovie);
-        seriesDownloadsSection.classList.toggle('hidden', isMovie);
+        const isSeries = document.querySelector('input[name="type"]:checked').value === 'Web Series';
+        seriesDownloadsSection.classList.toggle('hidden', !isSeries);
     };
     document.querySelectorAll('input[name="type"]').forEach(radio => radio.addEventListener('change', handleTypeChange));
     
@@ -203,14 +185,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.body.addEventListener('change', (e) => {
         if (e.target.classList.contains('poster-upload-input')) {
-            const statusEl = e.target.nextElementSibling;
-            handleImageUpload(e.target.files[0], posterUrlInput, posterPreview, statusEl);
+            handleImageUpload(e.target.files[0], posterUrlInput, posterPreview, e.target.nextElementSibling);
         } else if (e.target.classList.contains('screenshot-upload-input')) {
             const field = e.target.closest('.screenshot-field');
-            const urlInput = field.querySelector('.screenshot-url-input');
-            const previewEl = field.querySelector('.screenshot-preview');
-            const statusEl = field.querySelector('.upload-status');
-            handleImageUpload(e.target.files[0], urlInput, previewEl, statusEl);
+            handleImageUpload(e.target.files[0], field.querySelector('.screenshot-url-input'), field.querySelector('.screenshot-preview'), field.querySelector('.upload-status'));
         }
     });
     
@@ -219,8 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
              posterPreview.src = e.target.value;
              posterPreview.classList.toggle('hidden', !e.target.value);
         } else if (e.target.classList.contains('screenshot-url-input')) {
-            const field = e.target.closest('.screenshot-field');
-            const previewEl = field.querySelector('.screenshot-preview');
+            const previewEl = e.target.closest('.screenshot-field').querySelector('.screenshot-preview');
             previewEl.src = e.target.value;
             previewEl.classList.toggle('hidden', !e.target.value);
         }
@@ -243,6 +220,9 @@ document.addEventListener('DOMContentLoaded', () => {
             genres: [...document.querySelectorAll('.genre-checkbox:checked')].map(cb => cb.value),
             tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(Boolean),
             screenshots: [...screenshotsContainer.querySelectorAll('.screenshot-url-input')].map(input => input.value.trim()).filter(Boolean),
+            downloadLinks: [...movieLinksContainer.querySelectorAll('.flex')].map(div => ({
+                quality: div.children[0].value.trim(), size: div.children[1].value.trim(), url: div.children[2].value.trim(),
+            })).filter(link => link.url),
         };
 
         if (type === 'Web Series') {
@@ -252,10 +232,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     quality: linkDiv.children[0].value.trim(), size: linkDiv.children[1].value.trim(), url: linkDiv.children[2].value.trim(),
                 })).filter(link => link.url)
             })).filter(ep => ep.episodeTitle);
-        } else {
-            movieData.downloadLinks = [...movieLinksContainer.querySelectorAll('.flex')].map(div => ({
-                quality: div.children[0].value.trim(), size: div.children[1].value.trim(), url: div.children[2].value.trim(),
-            })).filter(link => link.url);
         }
         
         try {
@@ -285,9 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     await deleteMovie(id);
                     showToast('Content deleted!');
                     await renderMoviesTable();
-                } catch (error) {
-                    showToast(`Error: ${error.message}`, true);
-                }
+                } catch (error) { showToast(`Error: ${error.message}`, true); }
             }
         }
     });
