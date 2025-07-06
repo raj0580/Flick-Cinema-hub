@@ -59,15 +59,13 @@ document.addEventListener('DOMContentLoaded', () => {
         formTitle.textContent = `Edit Content: ${content.title}`;
         editMode = true;
         cancelEditBtn.classList.remove('hidden');
-
         movieIdInput.value = content.id;
-        Object.keys(content).forEach(key => {
+        
+        ['title', 'year', 'description', 'trailerUrl', 'language', 'quality', 'posterUrl'].forEach(key => {
             const el = document.getElementById(key);
-            if (el) {
-                if (key === 'tags') el.value = content[key] ? content[key].join(', ') : '';
-                else el.value = content[key] || '';
-            }
+            if (el && content[key]) el.value = content[key];
         });
+        document.getElementById('tags').value = content.tags ? content.tags.join(', ') : '';
         if (posterUrlInput.value) { posterPreview.src = posterUrlInput.value; posterPreview.classList.remove('hidden'); }
         
         const selectedType = content.type || 'Movie';
@@ -83,18 +81,24 @@ document.addEventListener('DOMContentLoaded', () => {
         movieQualityGroupsContainer.innerHTML = '';
         (content.downloadLinks || []).forEach(group => addQualityGroupField(movieQualityGroupsContainer, group.quality, group.links));
         if (movieQualityGroupsContainer.childElementCount === 0) addQualityGroupField(movieQualityGroupsContainer);
-
+        
         episodesContainer.innerHTML = '';
         if (selectedType === 'Web Series') {
             (content.episodes || []).forEach(ep => addEpisodeField(ep.episodeTitle, ep.qualityGroups));
             if (episodesContainer.childElementCount === 0) addEpisodeField();
         }
+        window.scrollTo(0, 0);
     };
     
-    // --- DYNAMIC UI BUILDERS ---
-    const addScreenshotField = (url = '') => { /* ... (code unchanged) ... */ };
+    const addScreenshotField = (url = '') => {
+        const fieldId = `ss-upload-${Date.now()}-${Math.random()}`;
+        const div = document.createElement('div');
+        div.className = 'upload-field screenshot-field';
+        div.innerHTML = `<div class="flex items-center justify-between mb-2"><div class="flex items-center gap-4"><label for="${fieldId}" class="cursor-pointer text-sm bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded">Upload</label><input type="file" id="${fieldId}" class="screenshot-upload-input hidden" accept="image/*"><span class="upload-status text-xs text-gray-400"></span></div><button type="button" class="remove-btn bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded">Remove</button></div><input type="url" placeholder="Or paste screenshot URL" value="${url}" class="form-input w-full screenshot-url-input"><img src="${url}" alt="Screenshot Preview" class="screenshot-preview mt-2 rounded ${url ? '' : 'hidden'}" style="max-height: 150px;">`;
+        screenshotsContainer.appendChild(div);
+    };
+
     const addQualityGroupField = (parentContainer, quality = '', links = []) => {
-        const groupId = `group-${Date.now()}`;
         const div = document.createElement('div');
         div.className = 'quality-group space-y-3';
         div.innerHTML = `<div class="flex items-center gap-4"><input type="text" placeholder="Quality Name (e.g., 1080p)" value="${quality}" class="form-input w-full quality-name-input"><button type="button" class="remove-btn bg-red-600 hover:bg-red-700 text-white p-2 rounded">Remove Group</button></div><div class="space-y-2 link-list"></div><button type="button" class="add-link-to-group-btn text-sm bg-gray-600 hover:bg-gray-700 py-1 px-3 rounded">+ Add Link Mirror</button>`;
@@ -112,7 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const addEpisodeField = (title = '', qualityGroups = []) => {
-        const episodeId = `ep-${Date.now()}`;
         const div = document.createElement('div');
         div.className = 'episode-field space-y-4';
         div.innerHTML = `<div class="flex items-center gap-4"><input type="text" placeholder="Episode Title (e.g., S01E01)" value="${title}" class="form-input w-full episode-title-input"><button type="button" class="remove-btn bg-red-600 hover:bg-red-700 text-white p-2 rounded">Remove Ep</button></div><div class="space-y-4 quality-groups-container"></div><button type="button" class="add-quality-group-to-episode-btn text-sm bg-blue-600 hover:bg-blue-700 py-1 px-3 rounded">+ Add Quality Group to Episode</button>`;
@@ -122,7 +125,25 @@ document.addEventListener('DOMContentLoaded', () => {
         else addQualityGroupField(qualityContainer);
     };
 
-    // --- EVENT HANDLING ---
+    const handleImageUpload = async (file, urlInput, previewEl, statusEl) => {
+        if (!file) return;
+        statusEl.textContent = 'Uploading...';
+        const formData = new FormData();
+        formData.append('image', file);
+        try {
+            const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+            const result = await response.json();
+            if (result.success) {
+                urlInput.value = result.data.url;
+                previewEl.src = result.data.url;
+                previewEl.classList.remove('hidden');
+                statusEl.textContent = 'Success!';
+            } else { throw new Error(result.error.message); }
+        } catch (error) {
+            statusEl.textContent = 'Upload failed!';
+        }
+    };
+
     const handleTypeChange = () => {
         const isSeries = document.querySelector('input[name="type"]:checked').value === 'Web Series';
         seriesDownloadsSection.classList.toggle('hidden', !isSeries);
@@ -139,12 +160,33 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (target.matches('.remove-btn')) target.closest('.quality-group, .episode-field, .screenshot-field, .flex').remove();
     });
 
-    // ... (rest of the JS code for image uploads, form submission, etc. is complex and would be here) ...
+    document.body.addEventListener('change', (e) => {
+        if (e.target.matches('.poster-upload-input')) {
+            handleImageUpload(e.target.files[0], posterUrlInput, posterPreview, e.target.nextElementSibling);
+        } else if (e.target.matches('.screenshot-upload-input')) {
+            const field = e.target.closest('.screenshot-field');
+            handleImageUpload(e.target.files[0], field.querySelector('.screenshot-url-input'), field.querySelector('.screenshot-preview'), field.querySelector('.upload-status'));
+        }
+    });
     
-    // --- FORM SUBMISSION ---
+    document.body.addEventListener('input', (e) => {
+        const target = e.target;
+        if (target.matches('#poster-url')) {
+             posterPreview.src = target.value;
+             posterPreview.classList.toggle('hidden', !target.value);
+        } else if (target.matches('.screenshot-url-input')) {
+            const previewEl = target.closest('.screenshot-field').querySelector('.screenshot-preview');
+            previewEl.src = target.value;
+            previewEl.classList.toggle('hidden', !target.value);
+        }
+    });
+
+    document.querySelectorAll('input[name="type"]').forEach(radio => radio.addEventListener('change', handleTypeChange));
+    cancelEditBtn.addEventListener('click', resetForm);
+    
     movieForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        // ... (data gathering logic needs complete rewrite for new structure) ...
+        if (!posterUrlInput.value) return showToast('Poster URL is required.', true);
 
         const getQualityGroupsData = (container) => {
             return [...container.querySelectorAll('.quality-group')].map(groupEl => ({
@@ -157,8 +199,21 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         const type = document.querySelector('input[name="type"]:checked').value;
-        const movieData = { type, title: document.getElementById('title').value, /*... other fields ...*/ };
-        movieData.downloadLinks = getQualityGroupsData(movieQualityGroupsContainer);
+        const movieData = {
+            type,
+            title: document.getElementById('title').value,
+            year: Number(document.getElementById('year').value),
+            description: document.getElementById('description').value,
+            posterUrl: posterUrlInput.value,
+            trailerUrl: document.getElementById('trailer-url').value,
+            language: document.getElementById('language').value,
+            quality: document.getElementById('quality').value.trim(),
+            genres: [...document.querySelectorAll('.genre-checkbox:checked')].map(cb => cb.value),
+            tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(Boolean),
+            screenshots: [...screenshotsContainer.querySelectorAll('.screenshot-url-input')].map(input => input.value.trim()).filter(Boolean),
+            downloadLinks: getQualityGroupsData(movieQualityGroupsContainer),
+        };
+
         if (type === 'Web Series') {
             movieData.episodes = [...episodesContainer.querySelectorAll('.episode-field')].map(epEl => ({
                 episodeTitle: epEl.querySelector('.episode-title-input').value.trim(),
@@ -166,20 +221,54 @@ document.addEventListener('DOMContentLoaded', () => {
             })).filter(ep => ep.episodeTitle && ep.qualityGroups.length > 0);
         }
         
-        // ... (rest of submit logic: Firebase call, resetForm, renderMoviesTable) ...
+        try {
+            if (editMode) await updateMovie(movieIdInput.value, movieData);
+            else await addMovie(movieData);
+            showToast(`Content ${editMode ? 'updated' : 'added'} successfully!`);
+            resetForm();
+            renderMoviesTable();
+        } catch (error) { showToast(`Error saving content: ${error.message}`, true); }
+    });
+    
+    moviesList.addEventListener('click', async (e) => {
+        const id = e.target.dataset.id;
+        if (e.target.classList.contains('edit-btn')) {
+            const content = await getMovieById(id);
+            if (content) populateForm(content);
+        }
+        if (e.target.classList.contains('delete-btn')) {
+            if (confirm('Are you sure?')) {
+                try {
+                    await deleteMovie(id);
+                    showToast('Content deleted!');
+                    renderMoviesTable();
+                } catch (error) { showToast(`Error: ${error.message}`, true); }
+            }
+        }
     });
 
-    // ... (all other existing functions: renderMoviesTable, populateForm, etc.) ...
-    // Note: The provided snippet is a conceptual rewrite. The full working JS would be very long.
-    // The following is a placeholder for the rest of the file logic to keep it complete.
-    const fullAdminJsLogic = () => { /* ... all the remaining functions from the previous correct version ... */ };
-    fullAdminJsLogic();
-    
-    // --- INITIALIZATION ---
+    const renderMoviesTable = async () => {
+        loadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
+        moviesTable.classList.add('hidden');
+        try {
+            const movies = (await getMovies()).sort((a,b) => a.title.localeCompare(b.title));
+            moviesList.innerHTML = movies.map(movie => `
+                <tr class="border-b border-gray-700 hover:bg-gray-900">
+                    <td class="p-3"><img src="${movie.posterUrl}" alt="${movie.title}" class="h-16 w-auto rounded object-cover"></td>
+                    <td class="p-3 font-semibold">${movie.title}</td>
+                    <td class="p-3">${movie.year}</td>
+                    <td class="p-3"><span class="text-xs font-bold ${movie.type === 'Web Series' ? 'text-green-400' : 'text-cyan-400'}">${movie.type || 'Movie'}</span></td>
+                    <td class="p-3">
+                        <button data-id="${movie.id}" class="edit-btn bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-2 rounded mr-2">Edit</button>
+                        <button data-id="${movie.id}" class="delete-btn bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-2 rounded">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (error) { moviesList.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">Failed to load content.</td></tr>`;} 
+        finally { loadingSpinner.innerHTML = ''; moviesTable.classList.remove('hidden'); }
+    };
+
     genresContainer.innerHTML = ALL_GENRES.map(genre => `<div><input type="checkbox" id="genre-${genre.toLowerCase()}" value="${genre}" class="genre-checkbox"><label for="genre-${genre.toLowerCase()}" class="genre-checkbox-label">${genre}</label></div>`).join('');
     resetForm();
-    // renderMoviesTable(); // This would be called after the full logic is in place
+    renderMoviesTable();
 });
-// The full JS file is too long to reasonably generate in one block while ensuring correctness.
-// This response focuses on providing the structure and key logic changes. The user should integrate this
-// new logic into the existing, working js/admin.js file.
