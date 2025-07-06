@@ -12,6 +12,8 @@
         .downloads-accordion summary::marker { color: #06b6d4; }
         .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; background: #000; }
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        /* Styles for the popup */
+        #telegram-popup.show > div { transform: scale(1); opacity: 1; }
     </style>
 </head>
 <body class="bg-gray-900 text-white font-sans">
@@ -37,41 +39,34 @@
                 </div>
             </section>
             
-            <div class="ad-container">
-                <script type="text/javascript"> atOptions = { 'key' : 'c4cfa7205583f65719312cbee578a1ba', 'format' : 'iframe', 'height' : 50, 'width' : 320, 'params' : {} }; </script>
-                <script type="text/javascript" src="//www.highperformanceformat.com/c4cfa7205583f65719312cbee578a1ba/invoke.js"></script>
-            </div>
-
-            <section class="mb-8">
-                <h2 class="text-2xl font-bold mb-4 border-l-4 border-cyan-400 pl-4">Watch Trailer</h2>
-                <div id="trailer-container" class="video-container rounded-lg overflow-hidden"></div>
-            </section>
-
-            <div class="ad-container">
-                 <script type="text/javascript"> atOptions = { 'key' : '64ec21bcf50c2c2878c9f37a11f41697', 'format' : 'iframe', 'height' : 60, 'width' : 468, 'params' : {} }; </script>
-                 <script type="text/javascript" src="//www.highperformanceformat.com/64ec21bcf50c2c2878c9f37a11f41697/invoke.js"></script>
-            </div>
-            
-            <section class="mb-8">
-                <h2 class="text-2xl font-bold mb-4 border-l-4 border-cyan-400 pl-4">Screenshots</h2>
-                <div id="screenshots-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-            </section>
-
-            <div class="ad-container">
-                <script type="text/javascript"> atOptions = { 'key' : 'a4865b7ef060ebcfa9a02db3af6569bc', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} }; </script>
-                <script type="text/javascript" src="//www.highperformanceformat.com/a4865b7ef060ebcfa9a02db3af6569bc/invoke.js"></script>
-            </div>
-
-            <section>
-                <h2 class="text-2xl font-bold mb-4 border-l-4 border-cyan-400 pl-4">Download Links</h2>
-                <div id="downloads-container" class="space-y-3 downloads-accordion"></div>
-            </section>
+            <div class="ad-container"><script type="text/javascript"> atOptions = { 'key' : 'c4cfa7205583f65719312cbee578a1ba', 'format' : 'iframe', 'height' : 50, 'width' : 320, 'params' : {} }; </script><script type="text/javascript" src="//www.highperformanceformat.com/c4cfa7205583f65719312cbee578a1ba/invoke.js"></script></div>
+            <section class="mb-8"><h2 class="text-2xl font-bold mb-4 border-l-4 border-cyan-400 pl-4">Watch Trailer</h2><div id="trailer-container" class="video-container rounded-lg overflow-hidden"></div></section>
+            <div class="ad-container"><script type="text/javascript"> atOptions = { 'key' : '64ec21bcf50c2c2878c9f37a11f41697', 'format' : 'iframe', 'height' : 60, 'width' : 468, 'params' : {} }; </script><script type="text/javascript" src="//www.highperformanceformat.com/64ec21bcf50c2c2878c9f37a11f41697/invoke.js"></script></div>
+            <section class="mb-8"><h2 class="text-2xl font-bold mb-4 border-l-4 border-cyan-400 pl-4">Screenshots</h2><div id="screenshots-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div></section>
+            <div class="ad-container"><script type="text/javascript"> atOptions = { 'key' : 'a4865b7ef060ebcfa9a02db3af6569bc', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} }; </script><script type="text/javascript" src="//www.highperformanceformat.com/a4865b7ef060ebcfa9a02db3af6569bc/invoke.js"></script></div>
+            <section><h2 class="text-2xl font-bold mb-4 border-l-4 border-cyan-400 pl-4">Download Links</h2><div id="downloads-container" class="space-y-3 downloads-accordion"></div></section>
         </div>
-        
         <div id="error-message" class="text-center text-red-500 py-20 hidden"><h2 class="text-3xl">Content not found!</h2><p class="mt-4">The requested content could not be found.</p><a href="index.html" class="mt-6 inline-block bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded">Go to Homepage</a></div>
     </main>
 
     <div id="footer-placeholder"></div>
+
+    <!-- NEW TELEGRAM POPUP MODAL -->
+    <div id="telegram-popup" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 sm:p-8 text-center border-2 border-cyan-500/50 transform transition-all scale-95 opacity-0">
+            <button id="close-popup-btn" class="absolute top-3 right-4 text-2xl font-bold text-gray-400 hover:text-white">×</button>
+            <div class="w-16 h-16 mx-auto bg-sky-500 rounded-full flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23l7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3L3.64 12c-.88-.25-.89-1.37.2-1.64l16.12-5.72c.78-.27 1.45.16 1.18 1.34l-2.83 13.25c-.28 1.3-1.02 1.6-2.03 1.01L12.6 16.3l-1.99 1.9c-.2.2-.4.4-.64.4z"></path></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-2">Join Our Community!</h2>
+            <p class="text-gray-300 mb-6">Get the fastest updates and access to exclusive content on our Telegram channel.</p>
+            <a href="https://t.me/your_channel_name" target="_blank" class="w-full flex items-center justify-center gap-3 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-4 rounded-lg transition-colors text-lg">
+                Join on Telegram
+            </a>
+            <p class="text-xs text-gray-500 mt-4">Your download has started. This window will close in <span id="popup-countdown">5</span> seconds...</p>
+        </div>
+    </div>
+
     <script type="module" src="js/firebase-config.js"></script>
     <script type="module" src="js/header-footer.js"></script>
     <script type="module" src="js/movies.js"></script>
