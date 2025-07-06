@@ -13,6 +13,7 @@ const cleanDownloadUrl = (rawUrl) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    // --- CACHE DOM ELEMENTS ---
     const movieForm = document.getElementById('movie-form');
     const moviesList = document.getElementById('movies-list');
     const loadingSpinner = document.getElementById('loading-spinner');
@@ -54,49 +55,87 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo(0, 0);
     };
 
+    // --- THIS IS THE FULLY REBUILT, CORRECTED FUNCTION ---
     const populateForm = (content) => {
         resetForm();
         formTitle.textContent = `Edit Content: ${content.title}`;
         editMode = true;
         cancelEditBtn.classList.remove('hidden');
         movieIdInput.value = content.id;
-        
-        ['title', 'year', 'description', 'trailerUrl', 'language', 'quality', 'posterUrl'].forEach(key => {
+
+        // Populate simple text/number fields
+        ['title', 'year', 'description', 'trailerUrl', 'language', 'quality'].forEach(key => {
             const el = document.getElementById(key);
-            if (el && content[key]) el.value = content[key];
+            if (el) el.value = content[key] || '';
         });
+
+        // Populate poster URL and preview
+        posterUrlInput.value = content.posterUrl || '';
+        if (posterUrlInput.value) {
+            posterPreview.src = posterUrlInput.value;
+            posterPreview.classList.remove('hidden');
+        }
+
+        // Populate tags
         document.getElementById('tags').value = content.tags ? content.tags.join(', ') : '';
-        if (posterUrlInput.value) { posterPreview.src = posterUrlInput.value; posterPreview.classList.remove('hidden'); }
         
+        // Populate content type
         const selectedType = content.type || 'Movie';
         document.querySelector(`input[name="type"][value="${selectedType}"]`).checked = true;
         handleTypeChange();
         
+        // Populate genres
         document.querySelectorAll('.genre-checkbox').forEach(cb => cb.checked = (content.genres || []).includes(cb.value));
         
+        // Populate screenshots
         screenshotsContainer.innerHTML = '';
         (content.screenshots || []).forEach(url => addScreenshotField(url));
         if (screenshotsContainer.childElementCount === 0) addScreenshotField();
 
-        // --- BACKWARD-COMPATIBLE POPULATION ---
+        // --- BACKWARD-COMPATIBLE DOWNLOAD LINK POPULATION ---
         movieQualityGroupsContainer.innerHTML = '';
-        const isNewFormat = content.downloadLinks && content.downloadLinks.length > 0 && typeof content.downloadLinks[0].links !== 'undefined';
-
-        if (isNewFormat) {
+        const isNewDownloadFormat = content.downloadLinks && content.downloadLinks.length > 0 && typeof content.downloadLinks[0].links !== 'undefined';
+        if (isNewDownloadFormat) {
+            // New format: { quality: '1080p', links: [ ... ] }
             (content.downloadLinks || []).forEach(group => addQualityGroupField(movieQualityGroupsContainer, group.quality, group.links));
         } else {
-            // It's the OLD format, convert it to the new UI structure
+            // Old format: { quality: '1080p', size: '1.2GB', url: '...' }
+            // Convert it to the new UI structure
             (content.downloadLinks || []).forEach(oldLink => {
                 addQualityGroupField(movieQualityGroupsContainer, oldLink.quality, [{ size: oldLink.size, url: oldLink.url }]);
             });
         }
         if (movieQualityGroupsContainer.childElementCount === 0) addQualityGroupField(movieQualityGroupsContainer);
         
+        // --- BACKWARD-COMPATIBLE EPISODE POPULATION ---
         episodesContainer.innerHTML = '';
-        if (selectedType === 'Web Series') {
-            (content.episodes || []).forEach(ep => addEpisodeField(ep.episodeTitle, ep.qualityGroups));
-            if (episodesContainer.childElementCount === 0) addEpisodeField();
+        if (selectedType === 'Web Series' && content.episodes) {
+            content.episodes.forEach(ep => {
+                const isNewEpisodeFormat = ep.qualityGroups && ep.qualityGroups.length > 0 && typeof ep.qualityGroups[0].links !== 'undefined';
+                let qualityGroupsForUI = [];
+                if (isNewEpisodeFormat) {
+                    qualityGroupsForUI = ep.qualityGroups;
+                } else if (ep.downloadLinks) {
+                    // It's the OLD episode format, convert it
+                    const qualityMap = {};
+                    ep.downloadLinks.forEach(oldLink => {
+                        if (!qualityMap[oldLink.quality]) {
+                            qualityMap[oldLink.quality] = [];
+                        }
+                        qualityMap[oldLink.quality].push({ size: oldLink.size, url: oldLink.url });
+                    });
+                    qualityGroupsForUI = Object.keys(qualityMap).map(quality => ({
+                        quality: quality,
+                        links: qualityMap[quality]
+                    }));
+                }
+                addEpisodeField(ep.episodeTitle, qualityGroupsForUI);
+            });
         }
+        if (episodesContainer.childElementCount === 0 && selectedType === 'Web Series') {
+            addEpisodeField();
+        }
+        
         window.scrollTo(0, 0);
     };
     
@@ -278,6 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { loadingSpinner.innerHTML = ''; moviesTable.classList.remove('hidden'); }
     };
 
+    // --- INITIALIZATION ---
     genresContainer.innerHTML = ALL_GENRES.map(genre => `<div><input type="checkbox" id="genre-${genre.toLowerCase()}" value="${genre}" class="genre-checkbox"><label for="genre-${genre.toLowerCase()}" class="genre-checkbox-label">${genre}</label></div>`).join('');
     resetForm();
     renderMoviesTable();
