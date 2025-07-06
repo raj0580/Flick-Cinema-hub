@@ -1,59 +1,41 @@
 import { getMovies, getMovieById } from './db.js';
 
 // --- TELEGRAM POPUP LOGIC WRAPPER ---
-// We wrap all popup code in a function that will be called only when the DOM is ready.
 const initializePopup = () => {
     let countdownInterval;
     const popup = document.getElementById('telegram-popup');
-    // If the popup doesn't exist on the page (e.g., on index.html), do nothing.
-    if (!popup) {
-        return; 
-    }
+    if (!popup) return; 
 
-    const popupContent = popup.querySelector('div');
     const closeBtn = document.getElementById('close-popup-btn');
     const countdownSpan = document.getElementById('popup-countdown');
 
     const showPopup = () => {
         popup.classList.remove('hidden');
-        setTimeout(() => {
-            popup.classList.add('show');
-        }, 10);
-
+        setTimeout(() => popup.classList.add('show'), 10);
         let seconds = 5;
         countdownSpan.textContent = seconds;
         clearInterval(countdownInterval); 
-
         countdownInterval = setInterval(() => {
             seconds--;
             countdownSpan.textContent = seconds;
-            if (seconds <= 0) {
-                hidePopup();
-            }
+            if (seconds <= 0) hidePopup();
         }, 1000);
     };
 
     const hidePopup = () => {
         clearInterval(countdownInterval);
         popup.classList.remove('show');
-        setTimeout(() => {
-            popup.classList.add('hidden');
-        }, 300);
+        setTimeout(() => popup.classList.add('hidden'), 300);
     };
 
     closeBtn.addEventListener('click', hidePopup);
     popup.addEventListener('click', (e) => {
-        if (e.target === popup) {
-            hidePopup();
-        }
+        if (e.target === popup) hidePopup();
     });
 
-    // We now attach the click listener to the downloads container and use event delegation.
-    // This is more robust and captures all download links, even those inside <details>.
     const downloadsContainer = document.getElementById('downloads-container');
     if(downloadsContainer) {
         downloadsContainer.addEventListener('click', (e) => {
-            // Find the closest ancestor that is a download link
             const downloadLink = e.target.closest('.download-link');
             if (downloadLink) {
                 e.preventDefault();
@@ -167,13 +149,18 @@ const renderMovieDetailPage = async () => {
                 <div class="mb-4">
                     <h4 class="text-md font-semibold text-gray-300 mb-3 border-b-2 border-gray-700 pb-1">${group.quality}</h4>
                     <div class="space-y-2 pl-2">
-                        ${group.links.map((link, index) => `
-                            <a href="${link.url}" class="download-link flex justify-between items-center bg-gray-900 hover:bg-gray-800 p-3 rounded-lg transition">
-                                <span class="font-semibold text-cyan-400">Link ${index + 1}</span>
-                                <span class="text-sm text-gray-400">${link.size}</span>
-                                <span class="bg-cyan-500 text-white text-sm font-bold py-1 px-3 rounded">Download</span>
-                            </a>
-                        `).join('')}
+                        ${
+                            // --- THIS IS THE FIX ---
+                            // We now safely check if group.links exists before mapping it.
+                            // If it's missing, we default to an empty array [] to prevent the crash.
+                            (group.links || []).map((link, index) => `
+                                <a href="${link.url}" class="download-link flex justify-between items-center bg-gray-900 hover:bg-gray-800 p-3 rounded-lg transition">
+                                    <span class="font-semibold text-cyan-400">Link ${index + 1}</span>
+                                    <span class="text-sm text-gray-400">${link.size}</span>
+                                    <span class="bg-cyan-500 text-white text-sm font-bold py-1 px-3 rounded">Download</span>
+                                </a>
+                            `).join('')
+                        }
                     </div>
                 </div>
             `).join('');
@@ -207,15 +194,11 @@ const renderMovieDetailPage = async () => {
     }
 };
 
-
-// --- INITIALIZATION ---
-// This runs after the initial HTML document has been completely loaded and parsed.
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('movie-grid')) {
         renderHomepage();
     } else if (document.getElementById('movie-content')) {
         renderMovieDetailPage();
-        // Initialize the popup logic ONLY on the movie detail page.
         initializePopup();
     }
 });
