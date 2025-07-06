@@ -12,12 +12,7 @@
         .form-input::placeholder { color: #9CA3AF; }
         .form-input:focus { outline: none; border-color: #06b6d4; box-shadow: 0 0 0 2px #06b6d4; }
         .upload-field { border: 1px solid #374151; border-radius: 0.5rem; padding: 1rem; background-color: rgba(0,0,0,0.2); }
-        
-        /* STYLES FOR GENRE CHECKBOXES */
-        .genre-checkbox-label {
-            display: inline-flex; align-items: center; cursor: pointer; padding: 0.25rem 0.75rem;
-            border-radius: 9999px; border: 1px solid #4B5563; background-color: #374151; transition: all 0.2s;
-        }
+        .genre-checkbox-label { display: inline-flex; align-items: center; cursor: pointer; padding: 0.25rem 0.75rem; border-radius: 9999px; border: 1px solid #4B5563; background-color: #374151; transition: all 0.2s; }
         .genre-checkbox-label:hover { border-color: #6b7280; }
         .genre-checkbox:checked + .genre-checkbox-label { background-color: #06b6d4; border-color: #0891b2; color: white; }
         .genre-checkbox { display: none; }
@@ -37,99 +32,50 @@
             <form id="movie-form">
                 <input type="hidden" id="movie-id">
 
-                <!-- NEW TYPE SELECTOR -->
                 <div class="mb-6">
                     <label class="block text-gray-300 mb-2 font-semibold">Content Type</label>
                     <div class="flex gap-6">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="type" id="type-movie" value="Movie" checked class="form-radio bg-gray-700 border-gray-600 text-cyan-500 focus:ring-cyan-500">
-                            <span>Movie</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="type" id="type-series" value="Web Series" class="form-radio bg-gray-700 border-gray-600 text-cyan-500 focus:ring-cyan-500">
-                            <span>Web Series</span>
-                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="type" value="Movie" checked class="form-radio bg-gray-700 border-gray-600 text-cyan-500 focus:ring-cyan-500"><span>Movie</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="type" value="Web Series" class="form-radio bg-gray-700 border-gray-600 text-cyan-500 focus:ring-cyan-500"><span>Web Series</span></label>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                     <!-- Column 1 -->
                     <div>
-                        <div class="mb-4">
-                            <label for="title" class="block text-gray-300 mb-1">Title</label>
-                            <input type="text" id="title" class="form-input w-full" required>
-                        </div>
-                        
+                        <div class="mb-4"><label for="title" class="block text-gray-300 mb-1">Title</label><input type="text" id="title" class="form-input w-full" required></div>
                         <div class="mb-4 upload-field">
                             <label class="block text-gray-200 mb-2 font-semibold">Poster</label>
-                            <div class="flex items-center gap-4">
-                               <label class="poster-upload-btn cursor-pointer inline-block bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded transition-colors">Choose & Upload</label>
-                               <input type="file" class="poster-upload-input hidden" accept="image/*">
-                               <span class="upload-status text-sm text-gray-400"></span>
-                            </div>
+                            <div class="flex items-center gap-4"><label class="poster-upload-btn cursor-pointer inline-block bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded transition-colors">Choose & Upload</label><input type="file" class="poster-upload-input hidden" accept="image/*"><span class="upload-status text-sm text-gray-400"></span></div>
                             <p class="text-center my-3 text-gray-500 text-xs font-bold">OR</p>
-                            <div>
-                                <label for="poster-url" class="block text-gray-300 mb-1 text-sm">Paste Image URL</label>
-                                <input type="url" id="poster-url" class="form-input w-full poster-url-input" placeholder="https://example.com/image.jpg">
-                            </div>
-                            <div class="mt-4 text-center">
-                                <img id="poster-preview" src="" alt="Poster Preview" class="hidden max-w-xs mx-auto rounded-lg shadow-md">
-                            </div>
+                            <div><label for="poster-url" class="block text-gray-300 mb-1 text-sm">Paste Image URL</label><input type="url" id="poster-url" class="form-input w-full poster-url-input" placeholder="https://example.com/image.jpg"></div>
+                            <div class="mt-4 text-center"><img id="poster-preview" src="" alt="Poster Preview" class="hidden max-w-xs mx-auto rounded-lg shadow-md"></div>
                         </div>
-
-                        <div class="mb-4">
-                            <label for="year" class="block text-gray-300 mb-1">Release Year</label>
-                            <input type="number" id="year" class="form-input w-full" required>
-                        </div>
-                        <div class="mb-4">
-                            <label for="language" class="block text-gray-300 mb-1">Language</label>
-                            <input type="text" id="language" class="form-input w-full" required>
-                        </div>
-                         <div class="mb-4">
-                            <label for="quality" class="block text-gray-300 mb-1">Quality (e.g., HD, 1080p)</label>
-                            <input type="text" id="quality" class="form-input w-full">
-                        </div>
-                        <div class="mb-4">
-                            <label for="trailer-url" class="block text-gray-300 mb-1">YouTube Trailer URL</label>
-                            <input type="url" id="trailer-url" class="form-input w-full" required>
-                        </div>
+                        <div class="mb-4"><label for="year" class="block text-gray-300 mb-1">Release Year</label><input type="number" id="year" class="form-input w-full" required></div>
+                        <div class="mb-4"><label for="language" class="block text-gray-300 mb-1">Language</label><input type="text" id="language" class="form-input w-full" required></div>
+                        <div class="mb-4"><label for="quality" class="block text-gray-300 mb-1">Quality (e.g., HD, 1080p)</label><input type="text" id="quality" class="form-input w-full"></div>
+                        <div class="mb-4"><label for="trailer-url" class="block text-gray-300 mb-1">YouTube Trailer URL</label><input type="url" id="trailer-url" class="form-input w-full" required></div>
                     </div>
                     <!-- Column 2 -->
                     <div>
-                        <div class="mb-4">
-                            <label for="description" class="block text-gray-300 mb-1">Description</label>
-                            <textarea id="description" rows="4" class="form-input w-full" required></textarea>
-                        </div>
-                         
-                         <div class="mb-4">
-                            <label class="block text-gray-300 mb-2">Genres</label>
-                            <div id="genres-container" class="p-3 bg-gray-900/50 border border-gray-700 rounded-lg flex flex-wrap gap-2"></div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="tags" class="block text-gray-300 mb-1">Tags (comma-separated)</label>
-                            <input type="text" id="tags" class="form-input w-full">
-                        </div>
-
-                        <div class="mb-4">
-                            <h3 class="text-lg font-semibold mb-2">Screenshots</h3>
-                            <div id="screenshots-container" class="space-y-4"></div>
-                            <button type="button" id="add-screenshot-btn" class="mt-4 text-sm bg-gray-600 hover:bg-gray-700 py-1 px-3 rounded">+ Add Screenshot</button>
-                        </div>
+                        <div class="mb-4"><label for="description" class="block text-gray-300 mb-1">Description</label><textarea id="description" rows="4" class="form-input w-full" required></textarea></div>
+                        <div class="mb-4"><label class="block text-gray-300 mb-2">Genres</label><div id="genres-container" class="p-3 bg-gray-900/50 border border-gray-700 rounded-lg flex flex-wrap gap-2"></div></div>
+                        <div class="mb-4"><label for="tags" class="block text-gray-300 mb-1">Tags (comma-separated)</label><input type="text" id="tags" class="form-input w-full"></div>
+                        <div class="mb-4"><h3 class="text-lg font-semibold mb-2">Screenshots</h3><div id="screenshots-container" class="space-y-4"></div><button type="button" id="add-screenshot-btn" class="mt-4 text-sm bg-gray-600 hover:bg-gray-700 py-1 px-3 rounded">+ Add Screenshot</button></div>
                     </div>
                 </div>
 
-                 <div id="downloads-section" class="mt-6 border-t border-gray-700 pt-6">
-                    <!-- MOVIE DOWNLOADS SECTION (Default) -->
+                <div id="downloads-section" class="mt-6 border-t border-gray-700 pt-6">
+                    <!-- SECTION FOR MOVIE / FULL PACK DOWNLOADS -->
                     <div id="movie-downloads-section">
-                        <h3 class="text-lg font-semibold mb-2">Movie Download Links</h3>
+                        <h3 class="text-lg font-semibold mb-2">Download Links (for Movie or Full Season Pack)</h3>
                         <div id="movie-links-container" class="space-y-4"></div>
                         <button type="button" id="add-movie-link-btn" class="mt-4 text-sm bg-gray-600 hover:bg-gray-700 py-1 px-3 rounded">+ Add Link</button>
                     </div>
 
-                    <!-- WEB SERIES DOWNLOADS SECTION (Hidden by default) -->
-                    <div id="series-downloads-section" class="hidden">
-                        <h3 class="text-lg font-semibold mb-2">Series Episodes</h3>
+                    <!-- SECTION FOR WEB SERIES EPISODES -->
+                    <div id="series-downloads-section" class="hidden mt-6 pt-6 border-t border-gray-600">
+                        <h3 class="text-lg font-semibold mb-2">Series Episodes (Individual)</h3>
                         <div id="episodes-container" class="space-y-6"></div>
                         <button type="button" id="add-episode-btn" class="mt-4 text-sm bg-blue-600 hover:bg-blue-700 py-2 px-4 rounded font-bold">+ Add Episode</button>
                     </div>
@@ -142,7 +88,6 @@
             </form>
         </section>
 
-        <!-- Existing Content List -->
         <section>
             <h2 class="text-2xl font-bold mb-4">Existing Content</h2>
             <div id="loading-spinner" class="text-center py-10"></div>
