@@ -78,8 +78,18 @@ document.addEventListener('DOMContentLoaded', () => {
         (content.screenshots || []).forEach(url => addScreenshotField(url));
         if (screenshotsContainer.childElementCount === 0) addScreenshotField();
 
+        // --- BACKWARD-COMPATIBLE POPULATION ---
         movieQualityGroupsContainer.innerHTML = '';
-        (content.downloadLinks || []).forEach(group => addQualityGroupField(movieQualityGroupsContainer, group.quality, group.links));
+        const isNewFormat = content.downloadLinks && content.downloadLinks.length > 0 && typeof content.downloadLinks[0].links !== 'undefined';
+
+        if (isNewFormat) {
+            (content.downloadLinks || []).forEach(group => addQualityGroupField(movieQualityGroupsContainer, group.quality, group.links));
+        } else {
+            // It's the OLD format, convert it to the new UI structure
+            (content.downloadLinks || []).forEach(oldLink => {
+                addQualityGroupField(movieQualityGroupsContainer, oldLink.quality, [{ size: oldLink.size, url: oldLink.url }]);
+            });
+        }
         if (movieQualityGroupsContainer.childElementCount === 0) addQualityGroupField(movieQualityGroupsContainer);
         
         episodesContainer.innerHTML = '';
