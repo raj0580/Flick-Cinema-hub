@@ -3,6 +3,30 @@ import { getMovies, addMovie, updateMovie, deleteMovie, getMovieById } from './d
 const IMGBB_API_KEY = '5090ec8c335078581b53f917f9657083';
 const ALL_GENRES = ['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Family', 'Fantasy', 'History', 'Horror', 'Music', 'Mystery', 'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western'];
 
+// --- NEW HELPER FUNCTION TO CLEAN URLs ---
+const cleanDownloadUrl = (rawUrl) => {
+    // If the URL is empty or doesn't contain the pattern, return it as-is.
+    if (!rawUrl || !rawUrl.includes('?link=')) {
+        return rawUrl;
+    }
+    try {
+        // Use URL object to safely parse parameters
+        const url = new URL(rawUrl);
+        const encodedLink = url.searchParams.get('link');
+        
+        if (encodedLink) {
+            // If the 'link' parameter exists, decode it and return the clean URL.
+            return decodeURIComponent(encodedLink);
+        }
+    } catch (e) {
+        // If 'new URL()' fails (e.g., not a full valid URL), log it but don't crash.
+        console.warn("Could not parse URL for cleaning, returning original value:", rawUrl, e);
+    }
+    // As a fallback, return the original URL if anything goes wrong.
+    return rawUrl;
+};
+
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- CACHE DOM ELEMENTS ---
     const movieForm = document.getElementById('movie-form');
@@ -221,7 +245,10 @@ document.addEventListener('DOMContentLoaded', () => {
             tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(Boolean),
             screenshots: [...screenshotsContainer.querySelectorAll('.screenshot-url-input')].map(input => input.value.trim()).filter(Boolean),
             downloadLinks: [...movieLinksContainer.querySelectorAll('.flex')].map(div => ({
-                quality: div.children[0].value.trim(), size: div.children[1].value.trim(), url: div.children[2].value.trim(),
+                quality: div.children[0].value.trim(),
+                size: div.children[1].value.trim(),
+                // --- MODIFICATION HERE --- Call the cleaning function ---
+                url: cleanDownloadUrl(div.children[2].value.trim()),
             })).filter(link => link.url),
         };
 
@@ -229,7 +256,10 @@ document.addEventListener('DOMContentLoaded', () => {
             movieData.episodes = [...episodesContainer.querySelectorAll('.episode-field')].map(epField => ({
                 episodeTitle: epField.querySelector('.episode-title-input').value.trim(),
                 downloadLinks: [...epField.querySelectorAll('.episode-links-container .flex')].map(linkDiv => ({
-                    quality: linkDiv.children[0].value.trim(), size: linkDiv.children[1].value.trim(), url: linkDiv.children[2].value.trim(),
+                    quality: linkDiv.children[0].value.trim(),
+                    size: linkDiv.children[1].value.trim(),
+                    // --- MODIFICATION HERE --- Call the cleaning function ---
+                    url: cleanDownloadUrl(linkDiv.children[2].value.trim()),
                 })).filter(link => link.url)
             })).filter(ep => ep.episodeTitle);
         }
