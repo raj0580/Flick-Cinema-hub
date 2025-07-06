@@ -1,5 +1,54 @@
 import { getMovies, getMovieById } from './db.js';
 
+// --- TELEGRAM POPUP LOGIC ---
+let countdownInterval;
+const popup = document.getElementById('telegram-popup');
+const popupContent = popup.querySelector('div');
+const closeBtn = document.getElementById('close-popup-btn');
+const countdownSpan = document.getElementById('popup-countdown');
+
+const showPopup = () => {
+    popup.classList.remove('hidden');
+    // Use a timeout to allow the display property to apply before starting the transition
+    setTimeout(() => {
+        popup.classList.add('show');
+    }, 10);
+
+    let seconds = 5;
+    countdownSpan.textContent = seconds;
+
+    // Clear any previous interval to prevent bugs
+    clearInterval(countdownInterval); 
+
+    countdownInterval = setInterval(() => {
+        seconds--;
+        countdownSpan.textContent = seconds;
+        if (seconds <= 0) {
+            hidePopup();
+        }
+    }, 1000);
+};
+
+const hidePopup = () => {
+    clearInterval(countdownInterval);
+    popup.classList.remove('show');
+    // Hide the element after the transition ends
+    setTimeout(() => {
+        popup.classList.add('hidden');
+    }, 300); // Should match the transition duration
+};
+
+// Event listeners for the popup
+closeBtn.addEventListener('click', hidePopup);
+popup.addEventListener('click', (e) => {
+    // If user clicks on the dark background, close the popup
+    if (e.target === popup) {
+        hidePopup();
+    }
+});
+
+
+// --- PAGE RENDERING LOGIC ---
 const renderMovieCard = (movie) => `
     <a href="movie.html?id=${movie.id}" class="group block bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-cyan-500/50 transition-shadow duration-300">
         <div class="relative">
@@ -21,61 +70,37 @@ const renderHomepage = async () => {
     const movieGrid = document.getElementById('movie-grid');
     const loadingSpinner = document.getElementById('loading-spinner');
     const noResults = document.getElementById('no-results');
-
     try {
-        const movies = await getMovies();
-        let allMovies = movies.sort((a, b) => b.year - a.year);
-
+        const movies = (await getMovies()).sort((a, b) => b.year - a.year);
         loadingSpinner.style.display = 'none';
-        if (allMovies.length === 0) {
-            noResults.style.display = 'block';
-            return;
-        }
-
+        if (movies.length === 0) { noResults.style.display = 'block'; return; }
         const populateFilters = (movies) => {
             const genres = [...new Set(movies.flatMap(m => m.genres || []))].sort();
             const years = [...new Set(movies.map(m => m.year))].sort((a, b) => b - a);
             const languages = [...new Set(movies.map(m => m.language))].sort();
-
             const genreFilter = document.getElementById('genre-filter');
             const yearFilter = document.getElementById('year-filter');
             const langFilter = document.getElementById('lang-filter');
-
             genres.forEach(g => genreFilter.innerHTML += `<option value="${g}">${g}</option>`);
             years.forEach(y => yearFilter.innerHTML += `<option value="${y}">${y}</option>`);
             languages.forEach(l => langFilter.innerHTML += `<option value="${l}">${l}</option>`);
         };
-
         const displayMovies = (moviesToDisplay) => {
             movieGrid.innerHTML = moviesToDisplay.map(renderMovieCard).join('');
             noResults.style.display = moviesToDisplay.length === 0 ? 'block' : 'none';
         };
-
         const filterMovies = () => {
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
             const selectedGenre = document.getElementById('genre-filter').value;
             const selectedYear = document.getElementById('year-filter').value;
             const selectedLang = document.getElementById('lang-filter').value;
-
-            const filtered = allMovies.filter(movie => {
-                const genres = movie.genres || [];
-                return movie.title.toLowerCase().includes(searchTerm) &&
-                       (!selectedGenre || genres.includes(selectedGenre)) &&
-                       (!selectedYear || movie.year == selectedYear) &&
-                       (!selectedLang || movie.language === selectedLang);
-            });
+            const filtered = movies.filter(movie => (movie.genres || []).includes(selectedGenre) || !selectedGenre).filter(movie => movie.title.toLowerCase().includes(searchTerm) && (!selectedYear || movie.year == selectedYear) && (!selectedLang || movie.language === selectedLang));
             displayMovies(filtered);
         };
-
-        populateFilters(allMovies);
-        displayMovies(allMovies);
-        document.getElementById('search-input').addEventListener('input', filterMovies);
-        document.getElementById('genre-filter').addEventListener('change', filterMovies);
-        document.getElementById('year-filter').addEventListener('change', filterMovies);
-        document.getElementById('lang-filter').addEventListener('change', filterMovies);
-
+        populateFilters(movies);
+        displayMovies(movies);
+        ['search-input', 'genre-filter', 'year-filter', 'lang-filter'].forEach(id => document.getElementById(id).addEventListener('input', filterMovies));
     } catch (error) {
-        console.error("Error loading movies:", error);
         loadingSpinner.innerHTML = `<p class="text-red-500">Failed to load movies.</p>`;
     }
 };
@@ -95,19 +120,16 @@ const renderMovieDetailPage = async () => {
         if (!movie) return errorMessage.style.display = 'block';
 
         document.title = `${movie.title} - Flick Cinema`;
-        document.getElementById('movie-poster').src = movie.posterUrl;
-        document.getElementById('movie-poster').alt = movie.title;
-        document.getElementById('movie-title').textContent = movie.title;
-        document.getElementById('movie-type').textContent = movie.type || 'Movie';
-        document.getElementById('movie-description').textContent = movie.description;
-        document.getElementById('movie-year').textContent = movie.year;
-        document.getElementById('movie-language').textContent = movie.language;
+        ['poster', 'title', 'type', 'description', 'year', 'language'].forEach(id => {
+            const el = document.getElementById(`movie-${id}`);
+            if (el) {
+                if (id === 'poster') { el.src = movie.posterUrl; el.alt = movie.title; }
+                else el.textContent = movie[id] || (id === 'type' ? 'Movie' : '');
+            }
+        });
         
-        const genresContainer = document.getElementById('movie-genres');
-        genresContainer.innerHTML = (movie.genres || []).map(g => `<span class="bg-gray-700 text-cyan-300 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">${g}</span>`).join('');
-        
-        const tagsContainer = document.getElementById('movie-tags');
-        tagsContainer.innerHTML = (movie.tags || []).map(t => `<span class="bg-gray-600 text-gray-300 text-xs font-medium mr-2 px-2.5 py-0.5 rounded">${t}</span>`).join('');
+        document.getElementById('movie-genres').innerHTML = (movie.genres || []).map(g => `<span class="bg-gray-700 text-cyan-300 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">${g}</span>`).join('');
+        document.getElementById('movie-tags').innerHTML = (movie.tags || []).map(t => `<span class="bg-gray-600 text-gray-300 text-xs font-medium mr-2 px-2.5 py-0.5 rounded">${t}</span>`).join('');
 
         const trailerContainer = document.getElementById('trailer-container');
         if (movie.trailerUrl) {
@@ -115,60 +137,58 @@ const renderMovieDetailPage = async () => {
             trailerContainer.innerHTML = `<iframe class="absolute top-0 left-0 w-full h-full" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
         }
 
-        const screenshotsGrid = document.getElementById('screenshots-grid');
-        screenshotsGrid.innerHTML = (movie.screenshots || []).map(url => `<a href="${url}" target="_blank"><img src="${url}" class="w-full h-auto rounded-lg object-cover" alt="Screenshot"></a>`).join('');
+        document.getElementById('screenshots-grid').innerHTML = (movie.screenshots || []).map(url => `<a href="${url}" target="_blank"><img src="${url}" class="w-full h-auto rounded-lg object-cover" alt="Screenshot"></a>`).join('');
 
         const downloadsContainer = document.getElementById('downloads-container');
         let downloadsHtml = '';
 
-        // --- CORRECTED LOGIC STARTS HERE ---
-
-        // Check for Movie/Full Pack links first
-        if (movie.downloadLinks && movie.downloadLinks.length > 0) {
-            if (movie.type === 'Web Series') {
-                downloadsHtml += `<h3 class="text-xl font-bold mb-3 text-gray-300">Full Season Pack</h3>`;
-            }
-            downloadsHtml += movie.downloadLinks.map(link => `
-                <a href="${link.url}" target="_blank" class="flex justify-between items-center bg-gray-800 hover:bg-gray-700 p-3 rounded-lg transition">
-                    <span class="font-semibold text-cyan-400">${link.quality}</span>
-                    <span class="text-sm text-gray-400">${link.size}</span>
-                    <span class="bg-cyan-500 text-white text-sm font-bold py-1 px-3 rounded">Download</span>
-                </a>
-            `).join('');
-        }
-
-        // Check for individual episodes (for Web Series)
-        if (movie.type === 'Web Series' && movie.episodes && movie.episodes.length > 0) {
-            // Add a separator if there were also full pack links
-            if (downloadsHtml !== '') {
-                downloadsHtml += `<hr class="border-gray-700 my-6">`;
-            }
-            downloadsHtml += `<h3 class="text-xl font-bold mb-3 text-gray-300">Individual Episodes</h3>`;
-            downloadsHtml += movie.episodes.map(episode => `
-                <details class="bg-gray-800 rounded-lg overflow-hidden mb-3">
-                    <summary class="font-bold text-lg p-4 bg-gray-700/50 hover:bg-gray-700">${episode.episodeTitle || 'Episode'}</summary>
-                    <div class="p-4 space-y-3">
-                        ${(episode.downloadLinks && episode.downloadLinks.length > 0) ? episode.downloadLinks.map(link => `
-                            <a href="${link.url}" target="_blank" class="flex justify-between items-center bg-gray-900 hover:bg-gray-800 p-3 rounded-lg transition">
-                                <span class="font-semibold text-cyan-400">${link.quality}</span>
+        const renderQualityGroups = (groups) => {
+            if (!groups || groups.length === 0) return '';
+            return groups.map(group => `
+                <div class="mb-4">
+                    <h4 class="text-md font-semibold text-gray-300 mb-3 border-b-2 border-gray-700 pb-1">${group.quality}</h4>
+                    <div class="space-y-2 pl-2">
+                        ${group.links.map((link, index) => `
+                            <a href="${link.url}" target="_blank" class="download-link flex justify-between items-center bg-gray-900 hover:bg-gray-800 p-3 rounded-lg transition">
+                                <span class="font-semibold text-cyan-400">Link ${index + 1}</span>
                                 <span class="text-sm text-gray-400">${link.size}</span>
                                 <span class="bg-cyan-500 text-white text-sm font-bold py-1 px-3 rounded">Download</span>
                             </a>
-                        `).join('') : '<p class="text-gray-400">No links for this episode.</p>'}
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        };
+        
+        if (movie.downloadLinks && movie.downloadLinks.length > 0) {
+            downloadsHtml += `<h3 class="text-xl font-bold mb-4 text-gray-300">${movie.type === 'Web Series' ? 'Full Season Pack' : 'Download Links'}</h3>`;
+            downloadsHtml += `<div class="bg-gray-800 p-4 rounded-lg">${renderQualityGroups(movie.downloadLinks)}</div>`;
+        }
+
+        if (movie.type === 'Web Series' && movie.episodes && movie.episodes.length > 0) {
+            if (downloadsHtml !== '') downloadsHtml += `<hr class="border-gray-700 my-8">`;
+            downloadsHtml += `<h3 class="text-xl font-bold mb-4 text-gray-300">Individual Episodes</h3>`;
+            downloadsHtml += movie.episodes.map(episode => `
+                <details class="bg-gray-800 rounded-lg overflow-hidden mb-3">
+                    <summary class="font-bold text-lg p-4 bg-gray-700/50 hover:bg-gray-700">${episode.episodeTitle}</summary>
+                    <div class="p-4 space-y-4">
+                        ${renderQualityGroups(episode.qualityGroups) || '<p class="text-gray-400">No links for this episode.</p>'}
                     </div>
                 </details>
             `).join('');
         }
         
-        // --- CORRECTED LOGIC ENDS HERE ---
-
-        if (downloadsHtml === '') {
-            downloadsContainer.innerHTML = '<p class="text-gray-400">No download links available.</p>';
-        } else {
-            downloadsContainer.innerHTML = downloadsHtml;
-        }
-
+        downloadsContainer.innerHTML = downloadsHtml || '<p class="text-gray-400">No download links available.</p>';
         movieContent.style.display = 'block';
+
+        // Add event listener to all download links AFTER they are rendered
+        document.querySelectorAll('.download-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault(); // Prevent immediate navigation
+                showPopup(); // Show the Telegram popup
+                window.open(link.href, '_blank'); // Open the actual download link in a new tab
+            });
+        });
 
     } catch (error) {
         console.error("Error loading movie details:", error);
@@ -177,8 +197,5 @@ const renderMovieDetailPage = async () => {
     }
 };
 
-if (document.getElementById('movie-grid')) {
-    renderHomepage();
-} else if (document.getElementById('movie-content')) {
-    renderMovieDetailPage();
-}
+if (document.getElementById('movie-grid')) renderHomepage();
+else if (document.getElementById('movie-content')) renderMovieDetailPage();
