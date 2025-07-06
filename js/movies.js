@@ -1,52 +1,68 @@
 import { getMovies, getMovieById } from './db.js';
 
-// --- TELEGRAM POPUP LOGIC ---
-let countdownInterval;
-const popup = document.getElementById('telegram-popup');
-const popupContent = popup.querySelector('div');
-const closeBtn = document.getElementById('close-popup-btn');
-const countdownSpan = document.getElementById('popup-countdown');
+// --- TELEGRAM POPUP LOGIC WRAPPER ---
+// We wrap all popup code in a function that will be called only when the DOM is ready.
+const initializePopup = () => {
+    let countdownInterval;
+    const popup = document.getElementById('telegram-popup');
+    // If the popup doesn't exist on the page (e.g., on index.html), do nothing.
+    if (!popup) {
+        return; 
+    }
 
-const showPopup = () => {
-    popup.classList.remove('hidden');
-    // Use a timeout to allow the display property to apply before starting the transition
-    setTimeout(() => {
-        popup.classList.add('show');
-    }, 10);
+    const popupContent = popup.querySelector('div');
+    const closeBtn = document.getElementById('close-popup-btn');
+    const countdownSpan = document.getElementById('popup-countdown');
 
-    let seconds = 5;
-    countdownSpan.textContent = seconds;
+    const showPopup = () => {
+        popup.classList.remove('hidden');
+        setTimeout(() => {
+            popup.classList.add('show');
+        }, 10);
 
-    // Clear any previous interval to prevent bugs
-    clearInterval(countdownInterval); 
-
-    countdownInterval = setInterval(() => {
-        seconds--;
+        let seconds = 5;
         countdownSpan.textContent = seconds;
-        if (seconds <= 0) {
+        clearInterval(countdownInterval); 
+
+        countdownInterval = setInterval(() => {
+            seconds--;
+            countdownSpan.textContent = seconds;
+            if (seconds <= 0) {
+                hidePopup();
+            }
+        }, 1000);
+    };
+
+    const hidePopup = () => {
+        clearInterval(countdownInterval);
+        popup.classList.remove('show');
+        setTimeout(() => {
+            popup.classList.add('hidden');
+        }, 300);
+    };
+
+    closeBtn.addEventListener('click', hidePopup);
+    popup.addEventListener('click', (e) => {
+        if (e.target === popup) {
             hidePopup();
         }
-    }, 1000);
-};
+    });
 
-const hidePopup = () => {
-    clearInterval(countdownInterval);
-    popup.classList.remove('show');
-    // Hide the element after the transition ends
-    setTimeout(() => {
-        popup.classList.add('hidden');
-    }, 300); // Should match the transition duration
-};
-
-// Event listeners for the popup
-closeBtn.addEventListener('click', hidePopup);
-popup.addEventListener('click', (e) => {
-    // If user clicks on the dark background, close the popup
-    if (e.target === popup) {
-        hidePopup();
+    // We now attach the click listener to the downloads container and use event delegation.
+    // This is more robust and captures all download links, even those inside <details>.
+    const downloadsContainer = document.getElementById('downloads-container');
+    if(downloadsContainer) {
+        downloadsContainer.addEventListener('click', (e) => {
+            // Find the closest ancestor that is a download link
+            const downloadLink = e.target.closest('.download-link');
+            if (downloadLink) {
+                e.preventDefault();
+                showPopup();
+                window.open(downloadLink.href, '_blank');
+            }
+        });
     }
-});
-
+};
 
 // --- PAGE RENDERING LOGIC ---
 const renderMovieCard = (movie) => `
@@ -94,14 +110,17 @@ const renderHomepage = async () => {
             const selectedGenre = document.getElementById('genre-filter').value;
             const selectedYear = document.getElementById('year-filter').value;
             const selectedLang = document.getElementById('lang-filter').value;
-            const filtered = movies.filter(movie => (movie.genres || []).includes(selectedGenre) || !selectedGenre).filter(movie => movie.title.toLowerCase().includes(searchTerm) && (!selectedYear || movie.year == selectedYear) && (!selectedLang || movie.language === selectedLang));
+            const filtered = movies.filter(movie => ((movie.genres || []).includes(selectedGenre) || !selectedGenre) && movie.title.toLowerCase().includes(searchTerm) && (!selectedYear || movie.year == selectedYear) && (!selectedLang || movie.language === selectedLang));
             displayMovies(filtered);
         };
         populateFilters(movies);
         displayMovies(movies);
-        ['search-input', 'genre-filter', 'year-filter', 'lang-filter'].forEach(id => document.getElementById(id).addEventListener('input', filterMovies));
+        ['search-input', 'genre-filter', 'year-filter', 'lang-filter'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.addEventListener('input', filterMovies);
+        });
     } catch (error) {
-        loadingSpinner.innerHTML = `<p class="text-red-500">Failed to load movies.</p>`;
+        if(loadingSpinner) loadingSpinner.innerHTML = `<p class="text-red-500">Failed to load movies.</p>`;
     }
 };
 
@@ -149,7 +168,7 @@ const renderMovieDetailPage = async () => {
                     <h4 class="text-md font-semibold text-gray-300 mb-3 border-b-2 border-gray-700 pb-1">${group.quality}</h4>
                     <div class="space-y-2 pl-2">
                         ${group.links.map((link, index) => `
-                            <a href="${link.url}" target="_blank" class="download-link flex justify-between items-center bg-gray-900 hover:bg-gray-800 p-3 rounded-lg transition">
+                            <a href="${link.url}" class="download-link flex justify-between items-center bg-gray-900 hover:bg-gray-800 p-3 rounded-lg transition">
                                 <span class="font-semibold text-cyan-400">Link ${index + 1}</span>
                                 <span class="text-sm text-gray-400">${link.size}</span>
                                 <span class="bg-cyan-500 text-white text-sm font-bold py-1 px-3 rounded">Download</span>
@@ -181,21 +200,22 @@ const renderMovieDetailPage = async () => {
         downloadsContainer.innerHTML = downloadsHtml || '<p class="text-gray-400">No download links available.</p>';
         movieContent.style.display = 'block';
 
-        // Add event listener to all download links AFTER they are rendered
-        document.querySelectorAll('.download-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault(); // Prevent immediate navigation
-                showPopup(); // Show the Telegram popup
-                window.open(link.href, '_blank'); // Open the actual download link in a new tab
-            });
-        });
-
     } catch (error) {
         console.error("Error loading movie details:", error);
-        loadingSpinner.style.display = 'none';
-        errorMessage.style.display = 'block';
+        if(loadingSpinner) loadingSpinner.style.display = 'none';
+        if(errorMessage) errorMessage.style.display = 'block';
     }
 };
 
-if (document.getElementById('movie-grid')) renderHomepage();
-else if (document.getElementById('movie-content')) renderMovieDetailPage();
+
+// --- INITIALIZATION ---
+// This runs after the initial HTML document has been completely loaded and parsed.
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('movie-grid')) {
+        renderHomepage();
+    } else if (document.getElementById('movie-content')) {
+        renderMovieDetailPage();
+        // Initialize the popup logic ONLY on the movie detail page.
+        initializePopup();
+    }
+});
