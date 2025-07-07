@@ -66,13 +66,15 @@ const renderHomepage = async () => {
         const populateFilters = (movies) => {
             const genres = [...new Set(movies.flatMap(m => m.genres || []))].sort();
             const years = [...new Set(movies.map(m => m.year))].sort((a, b) => b - a);
-            const languages = [...new Set(movies.map(m => m.language))].sort();
+            const categories = [...new Set(movies.map(m => m.category).filter(Boolean))].sort();
+
             const genreFilter = document.getElementById('genre-filter');
             const yearFilter = document.getElementById('year-filter');
-            const langFilter = document.getElementById('lang-filter');
+            const categoryFilter = document.getElementById('category-filter');
+
             genres.forEach(g => genreFilter.innerHTML += `<option value="${g}">${g}</option>`);
             years.forEach(y => yearFilter.innerHTML += `<option value="${y}">${y}</option>`);
-            languages.forEach(l => langFilter.innerHTML += `<option value="${l}">${l}</option>`);
+            categories.forEach(c => categoryFilter.innerHTML += `<option value="${c}">${c}</option>`);
         };
 
         const displayMovies = (moviesToDisplay) => {
@@ -89,19 +91,21 @@ const renderHomepage = async () => {
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
             const selectedGenre = document.getElementById('genre-filter').value;
             const selectedYear = document.getElementById('year-filter').value;
-            const selectedLang = document.getElementById('lang-filter').value;
-            const filtered = movies.filter(movie => ((movie.genres || []).includes(selectedGenre) || !selectedGenre) && movie.title.toLowerCase().includes(searchTerm) && (!selectedYear || movie.year == selectedYear) && (!selectedLang || movie.language === selectedLang));
+            const selectedCategory = document.getElementById('category-filter').value;
+            
+            const filtered = movies.filter(movie => 
+                ((movie.genres || []).includes(selectedGenre) || !selectedGenre) && 
+                movie.title.toLowerCase().includes(searchTerm) && 
+                (!selectedYear || movie.year == selectedYear) && 
+                (!selectedCategory || movie.category === selectedCategory)
+            );
             displayMovies(filtered);
         };
         
-        if (movies.length === 0) {
-            displayMovies([]);
-        } else {
-            populateFilters(movies);
-            displayMovies(movies);
-        }
+        if (movies.length === 0) { displayMovies([]); }
+        else { populateFilters(movies); displayMovies(movies); }
         
-        ['search-input', 'genre-filter', 'year-filter', 'lang-filter'].forEach(id => {
+        ['search-input', 'genre-filter', 'year-filter', 'category-filter'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.addEventListener('input', filterMovies);
         });
@@ -114,55 +118,44 @@ const renderHomepage = async () => {
 const handleRequestForm = () => {
     const form = document.getElementById('request-form');
     if (!form) return;
-
     const userDetailsSection = document.getElementById('user-details-section');
     const nameInput = document.getElementById('request-name');
     const emailInput = document.getElementById('request-email');
-
     const savedUser = JSON.parse(localStorage.getItem('flickCinemaUser'));
     if (!savedUser) {
         userDetailsSection.classList.remove('hidden');
         nameInput.required = true;
         emailInput.required = true;
     }
-
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const submitBtn = document.getElementById('request-submit-btn');
         const messageDiv = document.getElementById('request-message');
         const title = document.getElementById('request-title').value.trim();
         const notes = document.getElementById('request-notes').value.trim();
-        
         let userName = savedUser?.name;
         let userEmail = savedUser?.email;
-
         if (!savedUser) {
             userName = nameInput.value.trim();
             userEmail = emailInput.value.trim();
         }
-
         if (!title || (!savedUser && (!userName || !userEmail))) {
             messageDiv.textContent = "Please fill out all required fields.";
             messageDiv.className = "mt-4 text-red-400";
             return;
         }
-
         submitBtn.disabled = true;
         submitBtn.textContent = "Submitting...";
-        
         try {
             await addMovieRequest({ title, notes, userName, userEmail, requestedAt: new Date() });
-            
             if (!savedUser) {
                 localStorage.setItem('flickCinemaUser', JSON.stringify({ name: userName, email: userEmail }));
                 userDetailsSection.classList.add('hidden');
             }
-
             messageDiv.textContent = "Thank you! Your request has been sent.";
             messageDiv.className = "mt-4 text-green-400";
             document.getElementById('request-title').value = '';
             document.getElementById('request-notes').value = '';
-
         } catch (err) {
             messageDiv.textContent = "Something went wrong. Please try again.";
             messageDiv.className = "mt-4 text-red-400";
@@ -188,14 +181,19 @@ const renderMovieDetailPage = async () => {
         if (!movie) return errorMessage.style.display = 'block';
 
         document.title = `${movie.title} - Flick Cinema`;
-        ['poster', 'title', 'type', 'description', 'year', 'language'].forEach(id => {
-            const el = document.getElementById(`movie-${id}`);
-            if (el) {
-                if (id === 'poster') { el.src = movie.posterUrl; el.alt = movie.title; }
-                else el.textContent = movie[id] || (id === 'type' ? 'Movie' : '');
-            }
-        });
         
+        document.getElementById('movie-poster').src = movie.posterUrl;
+        document.getElementById('movie-title').textContent = movie.title || '';
+        document.getElementById('movie-type').textContent = movie.type || 'Movie';
+        document.getElementById('movie-description').textContent = movie.description || '';
+        
+        const detailsContainer = document.getElementById('extra-details-container');
+        let detailsHtml = '';
+        if (movie.year) detailsHtml += `<div><strong>Year:</strong> <span class="text-gray-200">${movie.year}</span></div>`;
+        if (movie.category) detailsHtml += `<div><strong>Category:</strong> <span class="text-gray-200">${movie.category}</span></div>`;
+        if (movie.language) detailsHtml += `<div><strong>Language:</strong> <span class="text-gray-200">${movie.language}</span></div>`;
+        detailsContainer.innerHTML = detailsHtml;
+
         document.getElementById('movie-genres').innerHTML = (movie.genres || []).map(g => `<span class="bg-gray-700 text-cyan-300 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">${g}</span>`).join('');
         document.getElementById('movie-tags').innerHTML = (movie.tags || []).map(t => `<span class="bg-gray-600 text-gray-300 text-xs font-medium mr-2 px-2.5 py-0.5 rounded">${t}</span>`).join('');
         
