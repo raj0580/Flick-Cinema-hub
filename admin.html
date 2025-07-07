@@ -56,6 +56,13 @@
                 <div class="mt-8 flex gap-4"><button type="submit" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-6 rounded">Save Content</button><button type="button" id="cancel-edit-btn" class="hidden bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded">Cancel Edit</button></div>
             </form>
         </section>
+
+        <section class="my-12">
+            <h2 class="text-2xl font-bold mb-4">Movie Requests</h2>
+            <div id="requests-loading-spinner" class="text-center py-10"></div>
+            <div id="requests-list" class="space-y-3"></div>
+        </section>
+
         <section><h2 class="text-2xl font-bold mb-4">Existing Content</h2><div id="loading-spinner" class="text-center py-10"></div><div class="overflow-x-auto bg-gray-800 rounded-lg"><table id="movies-table" class="w-full text-left hidden"><thead class="bg-gray-700"><tr><th class="p-3">Poster</th><th class="p-3">Title</th><th class="p-3">Year</th><th class="p-3">Type</th><th class="p-3">Actions</th></tr></thead><tbody id="movies-list"></tbody></table></div></section>
     </main>
     <div id="footer-placeholder"></div>
