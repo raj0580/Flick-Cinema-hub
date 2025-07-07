@@ -13,6 +13,7 @@ const cleanDownloadUrl = (rawUrl) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Cache DOM Elements
     const movieForm = document.getElementById('movie-form');
     const moviesList = document.getElementById('movies-list');
     const loadingSpinner = document.getElementById('loading-spinner');
@@ -53,7 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo(0, 0);
     };
     
-    // --- THIS IS THE FULLY FIXED POPULATE FORM ---
     const populateForm = (content) => {
         resetForm();
         formTitle.textContent = `Edit Content: ${content.title}`;
@@ -62,8 +62,8 @@ document.addEventListener('DOMContentLoaded', () => {
         movieIdInput.value = content.id;
         
         // --- THIS IS THE CRITICAL BUG FIX ---
-        // Added 'trailerUrl' back to this list.
-        ['title', 'year', 'description', 'trailerUrl', 'language', 'quality', 'category'].forEach(key => {
+        // The ID for the trailer input is 'trailer-url', not 'trailerUrl'. This is now correct.
+        ['title', 'year', 'description', 'trailer-url', 'language', 'quality', 'category'].forEach(key => {
             const el = document.getElementById(key);
             if (el && content[key]) {
                 el.value = content[key];
