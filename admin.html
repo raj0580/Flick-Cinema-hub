@@ -39,17 +39,20 @@
                     <!-- Column 1 -->
                     <div>
                         <div class="mb-4"><label for="title" class="block text-gray-300 mb-1">Title</label><input type="text" id="title" class="form-input w-full" required></div>
+                        
+                        <!-- RESTRUCTURED UPLOAD FIELD -->
                         <div class="mb-4 upload-field" data-drop-zone="poster">
                             <label class="block text-gray-200 mb-2 font-semibold">Poster</label>
-                            <div class="flex items-center gap-4">
-                               <label for="poster-upload" class="cursor-pointer inline-block bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded transition-colors">Choose or Drop Image</label>
-                               <input type="file" id="poster-upload" class="hidden" data-upload-target="poster" accept="image/*">
-                               <span data-status="poster" class="upload-status text-sm text-gray-400"></span>
+                            <div class="text-center p-4 border-2 border-dashed border-gray-600 rounded-lg">
+                                <label for="poster-upload" class="cursor-pointer inline-block bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded transition-colors">Choose or Drop Image</label>
+                                <input type="file" id="poster-upload" class="hidden" data-upload-target="poster" accept="image/*">
+                                <span data-status="poster" class="upload-status text-sm text-gray-400 block mt-2"></span>
                             </div>
                             <p class="text-center my-3 text-gray-500 text-xs font-bold">OR</p>
                             <div><label for="poster-url" class="block text-gray-300 mb-1 text-sm">Paste Image URL</label><input type="url" id="poster-url" class="form-input w-full" data-url-target="poster" placeholder="https://example.com/image.jpg"></div>
                             <div class="mt-4 text-center"><img id="poster-preview" data-preview="poster" src="" alt="Poster Preview" class="hidden max-w-xs mx-auto rounded-lg shadow-md"></div>
                         </div>
+
                         <div class="mb-4"><label for="year" class="block text-gray-300 mb-1">Release Year</label><input type="number" id="year" class="form-input w-full" required></div>
                         <div class="mb-4"><label for="category" class="block text-gray-300 mb-1">Category</label><select id="category" class="form-input w-full" required><option value="" disabled selected>Select a Category</option><option>Bollywood</option><option>Bengali Cinema</option><option>South Indian</option><option>Hollywood</option><option>Korean</option><option>Anime</option><option>Other</option></select></div>
                         <div class="mb-4"><label for="language" class="block text-gray-300 mb-1">Language (e.g., Hindi, English)</label><input type="text" id="language" class="form-input w-full" required></div>
