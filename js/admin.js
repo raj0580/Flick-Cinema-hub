@@ -1,4 +1,4 @@
-import { getMovies, addMovie, updateMovie, deleteMovie, getMovieById } from './db.js';
+import { getMovies, addMovie, updateMovie, deleteMovie, getMovieById, getMovieRequests, deleteMovieRequest } from './db.js';
 
 const IMGBB_API_KEY = '5090ec8c335078581b53f917f9657083';
 const ALL_GENRES = ['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Family', 'Fantasy', 'History', 'Horror', 'Music', 'Mystery', 'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western'];
@@ -13,7 +13,6 @@ const cleanDownloadUrl = (rawUrl) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- CACHE DOM ELEMENTS ---
     const movieForm = document.getElementById('movie-form');
     const moviesList = document.getElementById('movies-list');
     const loadingSpinner = document.getElementById('loading-spinner');
@@ -28,6 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const seriesDownloadsSection = document.getElementById('series-downloads-section');
     const movieQualityGroupsContainer = document.getElementById('movie-quality-groups-container');
     const episodesContainer = document.getElementById('episodes-container');
+    const requestsList = document.getElementById('requests-list');
+    const requestsLoadingSpinner = document.getElementById('requests-loading-spinner');
     
     let editMode = false;
 
@@ -55,59 +56,41 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo(0, 0);
     };
 
-    // --- THIS IS THE FULLY REBUILT, CORRECTED FUNCTION ---
     const populateForm = (content) => {
         resetForm();
         formTitle.textContent = `Edit Content: ${content.title}`;
         editMode = true;
         cancelEditBtn.classList.remove('hidden');
         movieIdInput.value = content.id;
-
-        // Populate simple text/number fields
-        ['title', 'year', 'description', 'trailerUrl', 'language', 'quality'].forEach(key => {
-            const el = document.getElementById(key);
-            if (el) el.value = content[key] || '';
-        });
-
-        // Populate poster URL and preview
-        posterUrlInput.value = content.posterUrl || '';
-        if (posterUrlInput.value) {
-            posterPreview.src = posterUrlInput.value;
-            posterPreview.classList.remove('hidden');
-        }
-
-        // Populate tags
-        document.getElementById('tags').value = content.tags ? content.tags.join(', ') : '';
         
-        // Populate content type
+        ['title', 'year', 'description', 'trailerUrl', 'language', 'quality', 'posterUrl'].forEach(key => {
+            const el = document.getElementById(key);
+            if (el && content[key]) el.value = content[key];
+        });
+        document.getElementById('tags').value = content.tags ? content.tags.join(', ') : '';
+        if (posterUrlInput.value) { posterPreview.src = posterUrlInput.value; posterPreview.classList.remove('hidden'); }
+        
         const selectedType = content.type || 'Movie';
         document.querySelector(`input[name="type"][value="${selectedType}"]`).checked = true;
         handleTypeChange();
         
-        // Populate genres
         document.querySelectorAll('.genre-checkbox').forEach(cb => cb.checked = (content.genres || []).includes(cb.value));
         
-        // Populate screenshots
         screenshotsContainer.innerHTML = '';
         (content.screenshots || []).forEach(url => addScreenshotField(url));
         if (screenshotsContainer.childElementCount === 0) addScreenshotField();
 
-        // --- BACKWARD-COMPATIBLE DOWNLOAD LINK POPULATION ---
         movieQualityGroupsContainer.innerHTML = '';
-        const isNewDownloadFormat = content.downloadLinks && content.downloadLinks.length > 0 && typeof content.downloadLinks[0].links !== 'undefined';
-        if (isNewDownloadFormat) {
-            // New format: { quality: '1080p', links: [ ... ] }
+        const isNewFormat = content.downloadLinks && content.downloadLinks.length > 0 && typeof content.downloadLinks[0].links !== 'undefined';
+        if (isNewFormat) {
             (content.downloadLinks || []).forEach(group => addQualityGroupField(movieQualityGroupsContainer, group.quality, group.links));
         } else {
-            // Old format: { quality: '1080p', size: '1.2GB', url: '...' }
-            // Convert it to the new UI structure
             (content.downloadLinks || []).forEach(oldLink => {
                 addQualityGroupField(movieQualityGroupsContainer, oldLink.quality, [{ size: oldLink.size, url: oldLink.url }]);
             });
         }
         if (movieQualityGroupsContainer.childElementCount === 0) addQualityGroupField(movieQualityGroupsContainer);
         
-        // --- BACKWARD-COMPATIBLE EPISODE POPULATION ---
         episodesContainer.innerHTML = '';
         if (selectedType === 'Web Series' && content.episodes) {
             content.episodes.forEach(ep => {
@@ -116,25 +99,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isNewEpisodeFormat) {
                     qualityGroupsForUI = ep.qualityGroups;
                 } else if (ep.downloadLinks) {
-                    // It's the OLD episode format, convert it
                     const qualityMap = {};
                     ep.downloadLinks.forEach(oldLink => {
-                        if (!qualityMap[oldLink.quality]) {
-                            qualityMap[oldLink.quality] = [];
-                        }
+                        if (!qualityMap[oldLink.quality]) qualityMap[oldLink.quality] = [];
                         qualityMap[oldLink.quality].push({ size: oldLink.size, url: oldLink.url });
                     });
-                    qualityGroupsForUI = Object.keys(qualityMap).map(quality => ({
-                        quality: quality,
-                        links: qualityMap[quality]
-                    }));
+                    qualityGroupsForUI = Object.keys(qualityMap).map(quality => ({ quality, links: qualityMap[quality] }));
                 }
                 addEpisodeField(ep.episodeTitle, qualityGroupsForUI);
             });
         }
-        if (episodesContainer.childElementCount === 0 && selectedType === 'Web Series') {
-            addEpisodeField();
-        }
+        if (episodesContainer.childElementCount === 0 && selectedType === 'Web Series') addEpisodeField();
         
         window.scrollTo(0, 0);
     };
@@ -188,9 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 previewEl.classList.remove('hidden');
                 statusEl.textContent = 'Success!';
             } else { throw new Error(result.error.message); }
-        } catch (error) {
-            statusEl.textContent = 'Upload failed!';
-        }
+        } catch (error) { statusEl.textContent = 'Upload failed!'; }
     };
 
     const handleTypeChange = () => {
@@ -236,40 +209,10 @@ document.addEventListener('DOMContentLoaded', () => {
     movieForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!posterUrlInput.value) return showToast('Poster URL is required.', true);
-
-        const getQualityGroupsData = (container) => {
-            return [...container.querySelectorAll('.quality-group')].map(groupEl => ({
-                quality: groupEl.querySelector('.quality-name-input').value.trim(),
-                links: [...groupEl.querySelectorAll('.link-list .flex')].map(linkEl => ({
-                    size: linkEl.querySelector('.size-input').value.trim(),
-                    url: cleanDownloadUrl(linkEl.querySelector('.url-input').value.trim()),
-                })).filter(l => l.url)
-            })).filter(g => g.quality && g.links.length > 0);
-        };
-        
+        const getQualityGroupsData = (container) => [...container.querySelectorAll('.quality-group')].map(groupEl => ({quality: groupEl.querySelector('.quality-name-input').value.trim(), links: [...groupEl.querySelectorAll('.link-list .flex')].map(linkEl => ({size: linkEl.querySelector('.size-input').value.trim(), url: cleanDownloadUrl(linkEl.querySelector('.url-input').value.trim())})).filter(l => l.url)})).filter(g => g.quality && g.links.length > 0);
         const type = document.querySelector('input[name="type"]:checked').value;
-        const movieData = {
-            type,
-            title: document.getElementById('title').value,
-            year: Number(document.getElementById('year').value),
-            description: document.getElementById('description').value,
-            posterUrl: posterUrlInput.value,
-            trailerUrl: document.getElementById('trailer-url').value,
-            language: document.getElementById('language').value,
-            quality: document.getElementById('quality').value.trim(),
-            genres: [...document.querySelectorAll('.genre-checkbox:checked')].map(cb => cb.value),
-            tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(Boolean),
-            screenshots: [...screenshotsContainer.querySelectorAll('.screenshot-url-input')].map(input => input.value.trim()).filter(Boolean),
-            downloadLinks: getQualityGroupsData(movieQualityGroupsContainer),
-        };
-
-        if (type === 'Web Series') {
-            movieData.episodes = [...episodesContainer.querySelectorAll('.episode-field')].map(epEl => ({
-                episodeTitle: epEl.querySelector('.episode-title-input').value.trim(),
-                qualityGroups: getQualityGroupsData(epEl.querySelector('.quality-groups-container'))
-            })).filter(ep => ep.episodeTitle && ep.qualityGroups.length > 0);
-        }
-        
+        const movieData = {type, title: document.getElementById('title').value, year: Number(document.getElementById('year').value), description: document.getElementById('description').value, posterUrl: posterUrlInput.value, trailerUrl: document.getElementById('trailer-url').value, language: document.getElementById('language').value, quality: document.getElementById('quality').value.trim(), genres: [...document.querySelectorAll('.genre-checkbox:checked')].map(cb => cb.value), tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(Boolean), screenshots: [...screenshotsContainer.querySelectorAll('.screenshot-url-input')].map(input => input.value.trim()).filter(Boolean), downloadLinks: getQualityGroupsData(movieQualityGroupsContainer)};
+        if (type === 'Web Series') movieData.episodes = [...episodesContainer.querySelectorAll('.episode-field')].map(epEl => ({episodeTitle: epEl.querySelector('.episode-title-input').value.trim(), qualityGroups: getQualityGroupsData(epEl.querySelector('.quality-groups-container'))})).filter(ep => ep.episodeTitle && ep.qualityGroups.length > 0);
         try {
             if (editMode) await updateMovie(movieIdInput.value, movieData);
             else await addMovie(movieData);
@@ -301,24 +244,47 @@ document.addEventListener('DOMContentLoaded', () => {
         moviesTable.classList.add('hidden');
         try {
             const movies = (await getMovies()).sort((a,b) => a.title.localeCompare(b.title));
-            moviesList.innerHTML = movies.map(movie => `
-                <tr class="border-b border-gray-700 hover:bg-gray-900">
-                    <td class="p-3"><img src="${movie.posterUrl}" alt="${movie.title}" class="h-16 w-auto rounded object-cover"></td>
-                    <td class="p-3 font-semibold">${movie.title}</td>
-                    <td class="p-3">${movie.year}</td>
-                    <td class="p-3"><span class="text-xs font-bold ${movie.type === 'Web Series' ? 'text-green-400' : 'text-cyan-400'}">${movie.type || 'Movie'}</span></td>
-                    <td class="p-3">
-                        <button data-id="${movie.id}" class="edit-btn bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-2 rounded mr-2">Edit</button>
-                        <button data-id="${movie.id}" class="delete-btn bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-2 rounded">Delete</button>
-                    </td>
-                </tr>
-            `).join('');
+            moviesList.innerHTML = movies.map(movie => `<tr class="border-b border-gray-700 hover:bg-gray-900"><td class="p-3"><img src="${movie.posterUrl}" alt="${movie.title}" class="h-16 w-auto rounded object-cover"></td><td class="p-3 font-semibold">${movie.title}</td><td class="p-3">${movie.year}</td><td class="p-3"><span class="text-xs font-bold ${movie.type === 'Web Series' ? 'text-green-400' : 'text-cyan-400'}">${movie.type || 'Movie'}</span></td><td class="p-3"><button data-id="${movie.id}" class="edit-btn bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-2 rounded mr-2">Edit</button><button data-id="${movie.id}" class="delete-btn bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-2 rounded">Delete</button></td></tr>`).join('');
         } catch (error) { moviesList.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">Failed to load content.</td></tr>`;} 
         finally { loadingSpinner.innerHTML = ''; moviesTable.classList.remove('hidden'); }
     };
 
-    // --- INITIALIZATION ---
+    const renderMovieRequests = async () => {
+        requestsLoadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
+        requestsList.innerHTML = '';
+        try {
+            const requests = await getMovieRequests();
+            if (requests.length === 0) {
+                requestsList.innerHTML = `<p class="text-gray-500 text-center">No pending movie requests.</p>`;
+            } else {
+                requestsList.innerHTML = requests.map(req => `<div class="bg-gray-800 p-4 rounded-lg flex items-center justify-between gap-4"><div><p class="font-bold text-white">${req.title}</p><p class="text-sm text-gray-400">${req.notes || 'No notes provided.'}</p></div><button data-id="${req.id}" class="mark-done-btn bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-1 px-3 rounded">Done</button></div>`).join('');
+            }
+        } catch (error) {
+            requestsList.innerHTML = `<p class="text-red-500 text-center">Failed to load requests.</p>`;
+        } finally {
+            requestsLoadingSpinner.innerHTML = '';
+        }
+    };
+
+    requestsList.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('mark-done-btn')) {
+            const requestId = e.target.dataset.id;
+            e.target.disabled = true;
+            e.target.textContent = '...';
+            try {
+                await deleteMovieRequest(requestId);
+                showToast('Request marked as done!');
+                renderMovieRequests();
+            } catch (err) {
+                showToast('Failed to remove request.', true);
+                e.target.disabled = false;
+                e.target.textContent = 'Done';
+            }
+        }
+    });
+
     genresContainer.innerHTML = ALL_GENRES.map(genre => `<div><input type="checkbox" id="genre-${genre.toLowerCase()}" value="${genre}" class="genre-checkbox"><label for="genre-${genre.toLowerCase()}" class="genre-checkbox-label">${genre}</label></div>`).join('');
     resetForm();
     renderMoviesTable();
+    renderMovieRequests();
 });
