@@ -13,6 +13,7 @@ const cleanDownloadUrl = (rawUrl) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Cache DOM Elements
     const movieForm = document.getElementById('movie-form');
     const moviesList = document.getElementById('movies-list');
     const loadingSpinner = document.getElementById('loading-spinner');
@@ -55,7 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
         episodesContainer.innerHTML = ''; addEpisodeField();
         window.scrollTo(0, 0);
     };
-
+    
+    // --- THIS IS THE FULLY FIXED POPULATE FORM ---
     const populateForm = (content) => {
         resetForm();
         formTitle.textContent = `Edit Content: ${content.title}`;
@@ -71,7 +73,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         document.getElementById('tags').value = content.tags ? content.tags.join(', ') : '';
-        if (posterUrlInput.value) { posterPreview.src = posterUrlInput.value; posterPreview.classList.remove('hidden'); }
+        if (posterUrlInput.value) {
+            posterPreview.src = posterUrlInput.value;
+            posterPreview.classList.remove('hidden');
+        }
         
         const selectedType = content.type || 'Movie';
         document.querySelector(`input[name="type"][value="${selectedType}"]`).checked = true;
@@ -88,9 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isNewFormat) {
             (content.downloadLinks || []).forEach(group => addQualityGroupField(movieQualityGroupsContainer, group.quality, group.links));
         } else {
-            (content.downloadLinks || []).forEach(oldLink => {
-                addQualityGroupField(movieQualityGroupsContainer, oldLink.quality, [{ size: oldLink.size, url: oldLink.url }]);
-            });
+            (content.downloadLinks || []).forEach(oldLink => addQualityGroupField(movieQualityGroupsContainer, oldLink.quality, [{ size: oldLink.size, url: oldLink.url }]));
         }
         if (movieQualityGroupsContainer.childElementCount === 0) addQualityGroupField(movieQualityGroupsContainer);
         
@@ -114,11 +117,12 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo(0, 0);
     };
     
+    // --- DYNAMIC UI BUILDERS ---
     const addScreenshotField = (url = '') => {
         const fieldId = `ss-upload-${Date.now()}-${Math.random()}`;
         const div = document.createElement('div');
         div.className = 'upload-field screenshot-field';
-        div.innerHTML = `<div class="flex items-center justify-between mb-2"><div class="flex items-center gap-4"><label for="${fieldId}" class="cursor-pointer text-sm bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded">Upload</label><input type="file" id="${fieldId}" class="screenshot-upload-input hidden" accept="image/*"><span class="upload-status text-xs text-gray-400"></span></div><button type="button" class="remove-btn bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded">Remove</button></div><input type="url" placeholder="Or paste screenshot URL" value="${url}" class="form-input w-full screenshot-url-input"><img src="${url}" alt="Screenshot Preview" class="screenshot-preview mt-2 rounded ${url ? '' : 'hidden'}" style="max-height: 150px;">`;
+        div.innerHTML = `<div class="flex items-center justify-between mb-2"><div class="flex items-center gap-4"><label for="${fieldId}" class="cursor-pointer text-sm bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded">Choose or Drop</label><input type="file" id="${fieldId}" class="screenshot-upload-input hidden" accept="image/*"><span class="upload-status text-xs text-gray-400"></span></div><button type="button" class="remove-btn bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded">Remove</button></div><input type="url" placeholder="Or paste screenshot URL" value="${url}" class="form-input w-full screenshot-url-input"><img src="${url}" alt="Screenshot Preview" class="screenshot-preview mt-2 rounded ${url ? '' : 'hidden'}" style="max-height: 150px;">`;
         screenshotsContainer.appendChild(div);
     };
 
@@ -149,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else addQualityGroupField(qualityContainer);
     };
 
+    // --- UPLOAD AND EVENT HANDLING ---
     const handleImageUpload = async (file, urlInput, previewEl, statusEl) => {
         if (!file) return;
         statusEl.textContent = 'Uploading...';
@@ -165,16 +170,38 @@ document.addEventListener('DOMContentLoaded', () => {
             } else { throw new Error(result.error.message); }
         } catch (error) { statusEl.textContent = 'Upload failed!'; }
     };
+    
+    const setupDragAndDrop = (dropZone, fileInput, urlInput, previewEl, statusEl) => {
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            handleImageUpload(file, urlInput, previewEl, statusEl);
+        });
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            handleImageUpload(file, urlInput, previewEl, statusEl);
+        });
+    };
 
     const handleTypeChange = () => {
         const isSeries = document.querySelector('input[name="type"]:checked').value === 'Web Series';
         seriesDownloadsSection.classList.toggle('hidden', !isSeries);
     };
-
+    
+    document.querySelectorAll('input[name="type"]').forEach(radio => radio.addEventListener('change', handleTypeChange));
+    cancelEditBtn.addEventListener('click', resetForm);
+    
     document.body.addEventListener('click', (e) => {
         const target = e.target;
-        if (target.matches('.poster-upload-btn')) target.nextElementSibling.click();
-        else if (target.matches('#add-screenshot-btn')) addScreenshotField();
+        if (target.matches('#add-screenshot-btn')) addScreenshotField();
         else if (target.matches('#add-quality-group-btn')) addQualityGroupField(movieQualityGroupsContainer);
         else if (target.matches('#add-episode-btn')) addEpisodeField();
         else if (target.matches('.add-link-to-group-btn')) addLinkFieldToGroup(target.previousElementSibling);
@@ -182,15 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (target.matches('.remove-btn')) target.closest('.quality-group, .episode-field, .screenshot-field, .flex').remove();
     });
 
-    document.body.addEventListener('change', (e) => {
-        if (e.target.matches('.poster-upload-input')) {
-            handleImageUpload(e.target.files[0], posterUrlInput, posterPreview, e.target.nextElementSibling);
-        } else if (e.target.matches('.screenshot-upload-input')) {
-            const field = e.target.closest('.screenshot-field');
-            handleImageUpload(e.target.files[0], field.querySelector('.screenshot-url-input'), field.querySelector('.screenshot-preview'), field.querySelector('.upload-status'));
-        }
-    });
-    
     document.body.addEventListener('input', (e) => {
         const target = e.target;
         if (target.matches('#poster-url')) {
@@ -203,29 +221,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.querySelectorAll('input[name="type"]').forEach(radio => radio.addEventListener('change', handleTypeChange));
-    cancelEditBtn.addEventListener('click', resetForm);
-    
+    setupDragAndDrop(
+        document.getElementById('poster-drop-zone'),
+        document.getElementById('poster-upload-input'),
+        posterUrlInput,
+        posterPreview,
+        document.getElementById('poster-upload-status')
+    );
+
+    screenshotsContainer.addEventListener('dragover', (e) => {
+        const dropZone = e.target.closest('.screenshot-field');
+        if (dropZone) { e.preventDefault(); dropZone.classList.add('drag-over'); }
+    });
+    screenshotsContainer.addEventListener('dragleave', (e) => {
+        const dropZone = e.target.closest('.screenshot-field');
+        if (dropZone) { dropZone.classList.remove('drag-over'); }
+    });
+    screenshotsContainer.addEventListener('drop', (e) => {
+        const dropZone = e.target.closest('.screenshot-field');
+        if (dropZone) {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            handleImageUpload(
+                file,
+                dropZone.querySelector('.screenshot-url-input'),
+                dropZone.querySelector('.screenshot-preview'),
+                dropZone.querySelector('.upload-status')
+            );
+        }
+    });
+    screenshotsContainer.addEventListener('change', (e) => {
+        if (e.target.classList.contains('screenshot-upload-input')) {
+            const field = e.target.closest('.screenshot-field');
+            handleImageUpload(e.target.files[0], field.querySelector('.screenshot-url-input'), field.querySelector('.screenshot-preview'), field.querySelector('.upload-status'));
+        }
+    });
+
     movieForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!posterUrlInput.value) return showToast('Poster URL is required.', true);
         const getQualityGroupsData = (container) => [...container.querySelectorAll('.quality-group')].map(groupEl => ({quality: groupEl.querySelector('.quality-name-input').value.trim(), links: [...groupEl.querySelectorAll('.link-list .flex')].map(linkEl => ({size: linkEl.querySelector('.size-input').value.trim(), url: cleanDownloadUrl(linkEl.querySelector('.url-input').value.trim())})).filter(l => l.url)})).filter(g => g.quality && g.links.length > 0);
         const type = document.querySelector('input[name="type"]:checked').value;
-        const movieData = {
-            type,
-            title: document.getElementById('title').value,
-            year: Number(document.getElementById('year').value),
-            description: document.getElementById('description').value,
-            posterUrl: posterUrlInput.value,
-            trailerUrl: document.getElementById('trailer-url').value,
-            language: document.getElementById('language').value,
-            category: document.getElementById('category').value,
-            quality: document.getElementById('quality').value.trim(),
-            genres: [...document.querySelectorAll('.genre-checkbox:checked')].map(cb => cb.value),
-            tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(Boolean),
-            screenshots: [...screenshotsContainer.querySelectorAll('.screenshot-url-input')].map(input => input.value.trim()).filter(Boolean),
-            downloadLinks: getQualityGroupsData(movieQualityGroupsContainer),
-        };
+        const movieData = {type, title: document.getElementById('title').value, year: Number(document.getElementById('year').value), description: document.getElementById('description').value, posterUrl: posterUrlInput.value, trailerUrl: document.getElementById('trailer-url').value, language: document.getElementById('language').value, category: document.getElementById('category').value, quality: document.getElementById('quality').value.trim(), genres: [...document.querySelectorAll('.genre-checkbox:checked')].map(cb => cb.value), tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(Boolean), screenshots: [...screenshotsContainer.querySelectorAll('.screenshot-url-input')].map(input => input.value.trim()).filter(Boolean), downloadLinks: getQualityGroupsData(movieQualityGroupsContainer)};
         if (type === 'Web Series') movieData.episodes = [...episodesContainer.querySelectorAll('.episode-field')].map(epEl => ({episodeTitle: epEl.querySelector('.episode-title-input').value.trim(), qualityGroups: getQualityGroupsData(epEl.querySelector('.quality-groups-container'))})).filter(ep => ep.episodeTitle && ep.qualityGroups.length > 0);
         
         try {
