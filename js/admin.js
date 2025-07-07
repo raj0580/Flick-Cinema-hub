@@ -64,8 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById(key);
             if (el && content[key]) el.value = content[key];
         });
-
-        // This is the critical fix for the disappearing poster URL bug
+        
         const posterUrlInput = document.querySelector('[data-url-target="poster"]');
         const posterPreviewEl = document.querySelector('[data-preview="poster"]');
         if (posterUrlInput) posterUrlInput.value = content.posterUrl || '';
@@ -75,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         document.getElementById('tags').value = content.tags ? content.tags.join(', ') : '';
-        
         const selectedType = content.type || 'Movie';
         document.querySelector(`input[name="type"][value="${selectedType}"]`).checked = true;
         handleTypeChange();
@@ -111,12 +109,25 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo(0, 0);
     };
     
+    // --- THIS FUNCTION IS NOW CORRECTED ---
     const addScreenshotField = (url = '') => {
         const fieldId = `ss-upload-${Date.now()}`;
         const div = document.createElement('div');
         div.className = 'upload-field screenshot-field';
         div.setAttribute('data-drop-zone', fieldId);
-        div.innerHTML = `<div class="flex items-center justify-between mb-2"><div class="flex items-center gap-4"><label for="${fieldId}" class="cursor-pointer text-sm bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded">Choose or Drop</label><input type="file" id="${fieldId}" class="hidden" data-upload-target="${fieldId}" accept="image/*"><span data-status="${fieldId}" class="upload-status text-xs text-gray-400"></span></div><button type="button" class="remove-btn bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded">Remove</button></div><input type="url" placeholder="Or paste screenshot URL" value="${url}" data-url-target="${fieldId}" class="form-input w-full screenshot-url-input"><img src="${url}" alt="Screenshot Preview" data-preview="${fieldId}" class="screenshot-preview mt-2 rounded ${url ? '' : 'hidden'}" style="max-height: 150px;">`;
+        div.innerHTML = `
+            <div class="flex justify-end mb-2">
+                 <button type="button" class="remove-btn bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded">Remove</button>
+            </div>
+            <div class="text-center p-4 border-2 border-dashed border-gray-600 rounded-lg">
+                <label for="${fieldId}" class="cursor-pointer text-sm bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded">Choose or Drop</label>
+                <input type="file" id="${fieldId}" class="hidden" data-upload-target="${fieldId}" accept="image/*">
+                <span data-status="${fieldId}" class="upload-status text-xs text-gray-400 block mt-2"></span>
+            </div>
+            <p class="text-center my-2 text-gray-500 text-xs">OR</p>
+            <input type="url" placeholder="Paste screenshot URL" value="${url}" data-url-target="${fieldId}" class="form-input w-full screenshot-url-input">
+            <img src="${url}" alt="Screenshot Preview" data-preview="${fieldId}" class="screenshot-preview mt-2 rounded ${url ? '' : 'hidden'}" style="max-height: 150px;">
+        `;
         screenshotsContainer.appendChild(div);
     };
 
@@ -179,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (target.matches('#add-episode-btn')) addEpisodeField();
         else if (target.matches('.add-link-to-group-btn')) addLinkFieldToGroup(target.previousElementSibling);
         else if (target.matches('.add-quality-group-to-episode-btn')) addQualityGroupField(target.previousElementSibling);
-        else if (target.matches('.remove-btn')) target.closest('.quality-group, .episode-field, .screenshot-field, .flex').remove();
+        else if (target.matches('.remove-btn')) target.closest('.quality-group, .episode-field, .screenshot-field').remove();
     });
 
     document.body.addEventListener('input', (e) => {
@@ -293,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    genresContainer.innerHTML = ALL_GENRES.map(genre => `<div><input type="checkbox" id="genre-${genre.toLowerCase()}" value="${genre}" class="genre-checkbox"><label for="genre-${genre.toLowerCase()}" class="genre-checkbox-label">${genre}</label></div>`).join('');
+    document.getElementById('genres-container').innerHTML = ALL_GENRES.map(genre => `<div><input type="checkbox" id="genre-${genre.toLowerCase()}" value="${genre}" class="genre-checkbox"><label for="genre-${genre.toLowerCase()}" class="genre-checkbox-label">${genre}</label></div>`).join('');
     resetForm();
     renderMoviesTable();
     renderMovieRequests();
