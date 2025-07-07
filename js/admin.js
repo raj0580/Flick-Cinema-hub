@@ -248,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { moviesList.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">Failed to load content.</td></tr>`;} 
         finally { loadingSpinner.innerHTML = ''; moviesTable.classList.remove('hidden'); }
     };
-
+    
     const renderMovieRequests = async () => {
         requestsLoadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
         requestsList.innerHTML = '';
@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (requests.length === 0) {
                 requestsList.innerHTML = `<p class="text-gray-500 text-center">No pending movie requests.</p>`;
             } else {
-                requestsList.innerHTML = requests.map(req => `<div class="bg-gray-800 p-4 rounded-lg flex items-center justify-between gap-4"><div><p class="font-bold text-white">${req.title}</p><p class="text-sm text-gray-400">${req.notes || 'No notes provided.'}</p></div><button data-id="${req.id}" class="mark-done-btn bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-1 px-3 rounded">Done</button></div>`).join('');
+                requestsList.innerHTML = requests.map(req => `<div class="bg-gray-800 p-4 rounded-lg flex items-center justify-between gap-4"><div><p class="font-bold text-white">${req.title}</p><p class="text-sm text-gray-400">${req.notes || 'No notes provided.'}</p><p class="text-xs text-cyan-400 mt-2">By: ${req.userName || 'Anonymous'} (${req.userEmail || 'No email'})</p></div><button data-id="${req.id}" class="mark-done-btn bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-1 px-3 rounded">Done</button></div>`).join('');
             }
         } catch (error) {
             requestsList.innerHTML = `<p class="text-red-500 text-center">Failed to load requests.</p>`;
