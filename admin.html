@@ -11,10 +11,15 @@
         .form-input { padding: 0.5rem; border-radius: 0.375rem; color: #ffffff; background-color: #374151; border: 1px solid #4B5563; }
         .form-input::placeholder { color: #9CA3AF; }
         .form-input:focus { outline: none; border-color: #06b6d4; box-shadow: 0 0 0 2px #06b6d4; }
-        .upload-field, .quality-group, .episode-field { border: 1px solid #374151; border-radius: 0.5rem; padding: 1rem; background-color: rgba(0,0,0,0.2); }
+        .upload-field, .quality-group, .episode-field { border: 1px solid #374151; border-radius: 0.5rem; padding: 1rem; background-color: rgba(0,0,0,0.2); transition: background-color 0.2s; }
         .genre-checkbox-label { display: inline-flex; align-items: center; cursor: pointer; padding: 0.25rem 0.75rem; border-radius: 9999px; border: 1px solid #4B5563; background-color: #374151; transition: all 0.2s; }
         .genre-checkbox:checked + .genre-checkbox-label { background-color: #06b6d4; border-color: #0891b2; color: white; }
         .genre-checkbox { display: none; }
+        /* NEW: Styles for drag-and-drop */
+        .drag-over {
+            background-color: #0e7490 !important; /* cyan-700 */
+            border-style: dashed !important;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white font-sans">
@@ -34,25 +39,21 @@
                     <!-- Column 1 -->
                     <div>
                         <div class="mb-4"><label for="title" class="block text-gray-300 mb-1">Title</label><input type="text" id="title" class="form-input w-full" required></div>
-                        <div class="mb-4 upload-field"><label class="block text-gray-200 mb-2 font-semibold">Poster</label><div class="flex items-center gap-4"><label class="poster-upload-btn cursor-pointer inline-block bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded transition-colors">Choose & Upload</label><input type="file" class="poster-upload-input hidden" accept="image/*"><span class="upload-status text-sm text-gray-400"></span></div><p class="text-center my-3 text-gray-500 text-xs font-bold">OR</p><div><label for="poster-url" class="block text-gray-300 mb-1 text-sm">Paste Image URL</label><input type="url" id="poster-url" class="form-input w-full poster-url-input" placeholder="https://example.com/image.jpg"></div><div class="mt-4 text-center"><img id="poster-preview" src="" alt="Poster Preview" class="hidden max-w-xs mx-auto rounded-lg shadow-md"></div></div>
+                        <!-- UPDATED FOR DRAG & DROP -->
+                        <div id="poster-drop-zone" class="mb-4 upload-field">
+                            <label class="block text-gray-200 mb-2 font-semibold">Poster</label>
+                            <div class="flex items-center gap-4">
+                               <label for="poster-upload-input" class="cursor-pointer inline-block bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded transition-colors">Choose or Drop Image</label>
+                               <input type="file" id="poster-upload-input" class="hidden" accept="image/*">
+                               <span id="poster-upload-status" class="upload-status text-sm text-gray-400"></span>
+                            </div>
+                            <p class="text-center my-3 text-gray-500 text-xs font-bold">OR</p>
+                            <div><label for="poster-url" class="block text-gray-300 mb-1 text-sm">Paste Image URL</label><input type="url" id="poster-url" class="form-input w-full" placeholder="https://example.com/image.jpg"></div>
+                            <div class="mt-4 text-center"><img id="poster-preview" src="" alt="Poster Preview" class="hidden max-w-xs mx-auto rounded-lg shadow-md"></div>
+                        </div>
                         <div class="mb-4"><label for="year" class="block text-gray-300 mb-1">Release Year</label><input type="number" id="year" class="form-input w-full" required></div>
-                        <div class="mb-4">
-                            <label for="category" class="block text-gray-300 mb-1">Category</label>
-                            <select id="category" class="form-input w-full" required>
-                                <option value="" disabled selected>Select a Category</option>
-                                <option>Bollywood</option>
-                                <option>Bengali Cinema</option>
-                                <option>South Indian</option>
-                                <option>Hollywood</option>
-                                <option>Korean</option>
-                                <option>Anime</option>
-                                <option>Other</option>
-                            </select>
-                        </div>
-                        <div class="mb-4">
-                            <label for="language" class="block text-gray-300 mb-1">Language (e.g., Hindi, English)</label>
-                            <input type="text" id="language" class="form-input w-full" required>
-                        </div>
+                        <div class="mb-4"><label for="category" class="block text-gray-300 mb-1">Category</label><select id="category" class="form-input w-full" required><option value="" disabled selected>Select a Category</option><option>Bollywood</option><option>Bengali Cinema</option><option>South Indian</option><option>Hollywood</option><option>Korean</option><option>Anime</option><option>Other</option></select></div>
+                        <div class="mb-4"><label for="language" class="block text-gray-300 mb-1">Language (e.g., Hindi, English)</label><input type="text" id="language" class="form-input w-full" required></div>
                         <div class="mb-4"><label for="quality" class="block text-gray-300 mb-1">Overall Quality (e.g., HD)</label><input type="text" id="quality" class="form-input w-full"></div>
                         <div class="mb-4"><label for="trailer-url" class="block text-gray-300 mb-1">YouTube Trailer URL</label><input type="url" id="trailer-url" class="form-input w-full" required></div>
                     </div>
