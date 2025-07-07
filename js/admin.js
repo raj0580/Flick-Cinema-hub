@@ -13,7 +13,6 @@ const cleanDownloadUrl = (rawUrl) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Cache DOM Elements
     const movieForm = document.getElementById('movie-form');
     const moviesList = document.getElementById('movies-list');
     const loadingSpinner = document.getElementById('loading-spinner');
@@ -21,9 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const formTitle = document.getElementById('form-title');
     const movieIdInput = document.getElementById('movie-id');
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
-    const posterUrlInput = document.getElementById('poster-url');
-    const posterPreview = document.getElementById('poster-preview');
-    const genresContainer = document.getElementById('genres-container');
     const screenshotsContainer = document.getElementById('screenshots-container');
     const seriesDownloadsSection = document.getElementById('series-downloads-section');
     const movieQualityGroupsContainer = document.getElementById('movie-quality-groups-container');
@@ -49,15 +45,14 @@ document.addEventListener('DOMContentLoaded', () => {
         formTitle.textContent = 'Add New Content';
         editMode = false;
         cancelEditBtn.classList.add('hidden');
-        posterPreview.classList.add('hidden');
-        posterPreview.src = '';
+        document.querySelector('[data-preview="poster"]').classList.add('hidden');
+        document.querySelector('[data-preview="poster"]').src = '';
         screenshotsContainer.innerHTML = ''; addScreenshotField();
         movieQualityGroupsContainer.innerHTML = ''; addQualityGroupField(movieQualityGroupsContainer);
         episodesContainer.innerHTML = ''; addEpisodeField();
         window.scrollTo(0, 0);
     };
     
-    // --- THIS IS THE FULLY FIXED POPULATE FORM ---
     const populateForm = (content) => {
         resetForm();
         formTitle.textContent = `Edit Content: ${content.title}`;
@@ -65,18 +60,21 @@ document.addEventListener('DOMContentLoaded', () => {
         cancelEditBtn.classList.remove('hidden');
         movieIdInput.value = content.id;
         
-        ['title', 'year', 'description', 'trailerUrl', 'language', 'quality', 'posterUrl', 'category'].forEach(key => {
+        ['title', 'year', 'description', 'trailerUrl', 'language', 'quality', 'category'].forEach(key => {
             const el = document.getElementById(key);
-            if (el && content[key]) {
-                el.value = content[key];
-            }
+            if (el && content[key]) el.value = content[key];
         });
+
+        // This is the critical fix for the disappearing poster URL bug
+        const posterUrlInput = document.querySelector('[data-url-target="poster"]');
+        const posterPreviewEl = document.querySelector('[data-preview="poster"]');
+        if (posterUrlInput) posterUrlInput.value = content.posterUrl || '';
+        if (posterUrlInput.value) {
+            posterPreviewEl.src = posterUrlInput.value;
+            posterPreviewEl.classList.remove('hidden');
+        }
         
         document.getElementById('tags').value = content.tags ? content.tags.join(', ') : '';
-        if (posterUrlInput.value) {
-            posterPreview.src = posterUrlInput.value;
-            posterPreview.classList.remove('hidden');
-        }
         
         const selectedType = content.type || 'Movie';
         document.querySelector(`input[name="type"][value="${selectedType}"]`).checked = true;
@@ -90,11 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         movieQualityGroupsContainer.innerHTML = '';
         const isNewFormat = content.downloadLinks && content.downloadLinks.length > 0 && typeof content.downloadLinks[0].links !== 'undefined';
-        if (isNewFormat) {
-            (content.downloadLinks || []).forEach(group => addQualityGroupField(movieQualityGroupsContainer, group.quality, group.links));
-        } else {
-            (content.downloadLinks || []).forEach(oldLink => addQualityGroupField(movieQualityGroupsContainer, oldLink.quality, [{ size: oldLink.size, url: oldLink.url }]));
-        }
+        if (isNewFormat) (content.downloadLinks || []).forEach(group => addQualityGroupField(movieQualityGroupsContainer, group.quality, group.links));
+        else (content.downloadLinks || []).forEach(oldLink => addQualityGroupField(movieQualityGroupsContainer, oldLink.quality, [{ size: oldLink.size, url: oldLink.url }]));
         if (movieQualityGroupsContainer.childElementCount === 0) addQualityGroupField(movieQualityGroupsContainer);
         
         episodesContainer.innerHTML = '';
@@ -102,9 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
             content.episodes.forEach(ep => {
                 const isNewEpisodeFormat = ep.qualityGroups && ep.qualityGroups.length > 0 && typeof ep.qualityGroups[0].links !== 'undefined';
                 let qualityGroupsForUI = [];
-                if (isNewEpisodeFormat) {
-                    qualityGroupsForUI = ep.qualityGroups;
-                } else if (ep.downloadLinks) {
+                if (isNewEpisodeFormat) qualityGroupsForUI = ep.qualityGroups;
+                else if (ep.downloadLinks) {
                     const qualityMap = {};
                     ep.downloadLinks.forEach(oldLink => { if (!qualityMap[oldLink.quality]) qualityMap[oldLink.quality] = []; qualityMap[oldLink.quality].push({ size: oldLink.size, url: oldLink.url }); });
                     qualityGroupsForUI = Object.keys(qualityMap).map(quality => ({ quality, links: qualityMap[quality] }));
@@ -117,12 +111,12 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo(0, 0);
     };
     
-    // --- DYNAMIC UI BUILDERS ---
     const addScreenshotField = (url = '') => {
-        const fieldId = `ss-upload-${Date.now()}-${Math.random()}`;
+        const fieldId = `ss-upload-${Date.now()}`;
         const div = document.createElement('div');
         div.className = 'upload-field screenshot-field';
-        div.innerHTML = `<div class="flex items-center justify-between mb-2"><div class="flex items-center gap-4"><label for="${fieldId}" class="cursor-pointer text-sm bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded">Choose or Drop</label><input type="file" id="${fieldId}" class="screenshot-upload-input hidden" accept="image/*"><span class="upload-status text-xs text-gray-400"></span></div><button type="button" class="remove-btn bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded">Remove</button></div><input type="url" placeholder="Or paste screenshot URL" value="${url}" class="form-input w-full screenshot-url-input"><img src="${url}" alt="Screenshot Preview" class="screenshot-preview mt-2 rounded ${url ? '' : 'hidden'}" style="max-height: 150px;">`;
+        div.setAttribute('data-drop-zone', fieldId);
+        div.innerHTML = `<div class="flex items-center justify-between mb-2"><div class="flex items-center gap-4"><label for="${fieldId}" class="cursor-pointer text-sm bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded">Choose or Drop</label><input type="file" id="${fieldId}" class="hidden" data-upload-target="${fieldId}" accept="image/*"><span data-status="${fieldId}" class="upload-status text-xs text-gray-400"></span></div><button type="button" class="remove-btn bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded">Remove</button></div><input type="url" placeholder="Or paste screenshot URL" value="${url}" data-url-target="${fieldId}" class="form-input w-full screenshot-url-input"><img src="${url}" alt="Screenshot Preview" data-preview="${fieldId}" class="screenshot-preview mt-2 rounded ${url ? '' : 'hidden'}" style="max-height: 150px;">`;
         screenshotsContainer.appendChild(div);
     };
 
@@ -153,9 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
         else addQualityGroupField(qualityContainer);
     };
 
-    // --- UPLOAD AND EVENT HANDLING ---
-    const handleImageUpload = async (file, urlInput, previewEl, statusEl) => {
+    const handleImageUpload = async (file, uploadTargetId) => {
         if (!file) return;
+        const urlInput = document.querySelector(`[data-url-target="${uploadTargetId}"]`);
+        const previewEl = document.querySelector(`[data-preview="${uploadTargetId}"]`);
+        const statusEl = document.querySelector(`[data-status="${uploadTargetId}"]`);
         statusEl.textContent = 'Uploading...';
         const formData = new FormData();
         formData.append('image', file);
@@ -170,35 +166,12 @@ document.addEventListener('DOMContentLoaded', () => {
             } else { throw new Error(result.error.message); }
         } catch (error) { statusEl.textContent = 'Upload failed!'; }
     };
-    
-    const setupDragAndDrop = (dropZone, fileInput, urlInput, previewEl, statusEl) => {
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('drag-over');
-        });
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('drag-over');
-        });
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('drag-over');
-            const file = e.dataTransfer.files[0];
-            handleImageUpload(file, urlInput, previewEl, statusEl);
-        });
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            handleImageUpload(file, urlInput, previewEl, statusEl);
-        });
-    };
 
     const handleTypeChange = () => {
         const isSeries = document.querySelector('input[name="type"]:checked').value === 'Web Series';
         seriesDownloadsSection.classList.toggle('hidden', !isSeries);
     };
-    
-    document.querySelectorAll('input[name="type"]').forEach(radio => radio.addEventListener('change', handleTypeChange));
-    cancelEditBtn.addEventListener('click', resetForm);
-    
+
     document.body.addEventListener('click', (e) => {
         const target = e.target;
         if (target.matches('#add-screenshot-btn')) addScreenshotField();
@@ -211,61 +184,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.body.addEventListener('input', (e) => {
         const target = e.target;
-        if (target.matches('#poster-url')) {
-             posterPreview.src = target.value;
-             posterPreview.classList.toggle('hidden', !target.value);
-        } else if (target.matches('.screenshot-url-input')) {
-            const previewEl = target.closest('.screenshot-field').querySelector('.screenshot-preview');
+        if (target.matches('[data-url-target]')) {
+            const previewEl = document.querySelector(`[data-preview="${target.dataset.urlTarget}"]`);
             previewEl.src = target.value;
             previewEl.classList.toggle('hidden', !target.value);
         }
     });
 
-    setupDragAndDrop(
-        document.getElementById('poster-drop-zone'),
-        document.getElementById('poster-upload-input'),
-        posterUrlInput,
-        posterPreview,
-        document.getElementById('poster-upload-status')
-    );
-
-    screenshotsContainer.addEventListener('dragover', (e) => {
-        const dropZone = e.target.closest('.screenshot-field');
-        if (dropZone) { e.preventDefault(); dropZone.classList.add('drag-over'); }
-    });
-    screenshotsContainer.addEventListener('dragleave', (e) => {
-        const dropZone = e.target.closest('.screenshot-field');
-        if (dropZone) { dropZone.classList.remove('drag-over'); }
-    });
-    screenshotsContainer.addEventListener('drop', (e) => {
-        const dropZone = e.target.closest('.screenshot-field');
-        if (dropZone) {
+    ['dragover', 'dragleave', 'drop'].forEach(eventName => {
+        document.body.addEventListener(eventName, e => {
+            const dropZone = e.target.closest('[data-drop-zone]');
+            if (!dropZone) return;
             e.preventDefault();
-            dropZone.classList.remove('drag-over');
-            const file = e.dataTransfer.files[0];
-            handleImageUpload(
-                file,
-                dropZone.querySelector('.screenshot-url-input'),
-                dropZone.querySelector('.screenshot-preview'),
-                dropZone.querySelector('.upload-status')
-            );
-        }
+            if (eventName === 'dragover') dropZone.classList.add('drag-over');
+            else dropZone.classList.remove('drag-over');
+            if (eventName === 'drop') {
+                const file = e.dataTransfer.files[0];
+                handleImageUpload(file, dropZone.dataset.dropZone);
+            }
+        });
     });
-    screenshotsContainer.addEventListener('change', (e) => {
-        if (e.target.classList.contains('screenshot-upload-input')) {
-            const field = e.target.closest('.screenshot-field');
-            handleImageUpload(e.target.files[0], field.querySelector('.screenshot-url-input'), field.querySelector('.screenshot-preview'), field.querySelector('.upload-status'));
+
+    document.body.addEventListener('change', (e) => {
+        if (e.target.matches('[data-upload-target]')) {
+            const file = e.target.files[0];
+            handleImageUpload(file, e.target.dataset.uploadTarget);
         }
     });
 
+    document.querySelectorAll('input[name="type"]').forEach(radio => radio.addEventListener('change', handleTypeChange));
+    cancelEditBtn.addEventListener('click', resetForm);
+    
     movieForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (!posterUrlInput.value) return showToast('Poster URL is required.', true);
+        const posterUrlVal = document.querySelector('[data-url-target="poster"]').value;
+        if (!posterUrlVal) return showToast('Poster URL is required.', true);
         const getQualityGroupsData = (container) => [...container.querySelectorAll('.quality-group')].map(groupEl => ({quality: groupEl.querySelector('.quality-name-input').value.trim(), links: [...groupEl.querySelectorAll('.link-list .flex')].map(linkEl => ({size: linkEl.querySelector('.size-input').value.trim(), url: cleanDownloadUrl(linkEl.querySelector('.url-input').value.trim())})).filter(l => l.url)})).filter(g => g.quality && g.links.length > 0);
         const type = document.querySelector('input[name="type"]:checked').value;
-        const movieData = {type, title: document.getElementById('title').value, year: Number(document.getElementById('year').value), description: document.getElementById('description').value, posterUrl: posterUrlInput.value, trailerUrl: document.getElementById('trailer-url').value, language: document.getElementById('language').value, category: document.getElementById('category').value, quality: document.getElementById('quality').value.trim(), genres: [...document.querySelectorAll('.genre-checkbox:checked')].map(cb => cb.value), tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(Boolean), screenshots: [...screenshotsContainer.querySelectorAll('.screenshot-url-input')].map(input => input.value.trim()).filter(Boolean), downloadLinks: getQualityGroupsData(movieQualityGroupsContainer)};
+        const movieData = {type, title: document.getElementById('title').value, year: Number(document.getElementById('year').value), description: document.getElementById('description').value, posterUrl: posterUrlVal, trailerUrl: document.getElementById('trailer-url').value, language: document.getElementById('language').value, category: document.getElementById('category').value, quality: document.getElementById('quality').value.trim(), genres: [...document.querySelectorAll('.genre-checkbox:checked')].map(cb => cb.value), tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(Boolean), screenshots: [...screenshotsContainer.querySelectorAll('.screenshot-url-input')].map(input => input.value.trim()).filter(Boolean), downloadLinks: getQualityGroupsData(movieQualityGroupsContainer)};
         if (type === 'Web Series') movieData.episodes = [...episodesContainer.querySelectorAll('.episode-field')].map(epEl => ({episodeTitle: epEl.querySelector('.episode-title-input').value.trim(), qualityGroups: getQualityGroupsData(epEl.querySelector('.quality-groups-container'))})).filter(ep => ep.episodeTitle && ep.qualityGroups.length > 0);
-        
         try {
             if (editMode) await updateMovie(movieIdInput.value, movieData);
             else await addMovie(movieData);
