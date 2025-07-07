@@ -62,13 +62,16 @@ document.addEventListener('DOMContentLoaded', () => {
         movieIdInput.value = content.id;
         
         // --- THIS IS THE CRITICAL BUG FIX ---
-        // The ID for the trailer input is 'trailer-url', not 'trailerUrl'. This is now correct.
-        ['title', 'year', 'description', 'trailer-url', 'language', 'quality', 'category'].forEach(key => {
-            const el = document.getElementById(key);
-            if (el && content[key]) {
-                el.value = content[key];
-            }
-        });
+        // The key in the database is 'trailerUrl' (camelCase).
+        // I have corrected the list to use 'trailerUrl' when accessing the data,
+        // and get the element by its correct ID 'trailer-url'.
+        document.getElementById('title').value = content.title || '';
+        document.getElementById('year').value = content.year || '';
+        document.getElementById('description').value = content.description || '';
+        document.getElementById('trailer-url').value = content.trailerUrl || ''; // CORRECTED
+        document.getElementById('language').value = content.language || '';
+        document.getElementById('quality').value = content.quality || '';
+        document.getElementById('category').value = content.category || '';
         
         const posterUrlInput = document.querySelector('[data-url-target="poster"]');
         const posterPreviewEl = document.querySelector('[data-preview="poster"]');
