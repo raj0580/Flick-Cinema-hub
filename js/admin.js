@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo(0, 0);
     };
     
+    // --- THIS IS THE FULLY FIXED POPULATE FORM ---
     const populateForm = (content) => {
         resetForm();
         formTitle.textContent = `Edit Content: ${content.title}`;
@@ -60,9 +61,13 @@ document.addEventListener('DOMContentLoaded', () => {
         cancelEditBtn.classList.remove('hidden');
         movieIdInput.value = content.id;
         
+        // --- THIS IS THE CRITICAL BUG FIX ---
+        // Added 'trailerUrl' back to this list.
         ['title', 'year', 'description', 'trailerUrl', 'language', 'quality', 'category'].forEach(key => {
             const el = document.getElementById(key);
-            if (el && content[key]) el.value = content[key];
+            if (el && content[key]) {
+                el.value = content[key];
+            }
         });
         
         const posterUrlInput = document.querySelector('[data-url-target="poster"]');
@@ -109,25 +114,12 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo(0, 0);
     };
     
-    // --- THIS FUNCTION IS NOW CORRECTED ---
     const addScreenshotField = (url = '') => {
         const fieldId = `ss-upload-${Date.now()}`;
         const div = document.createElement('div');
         div.className = 'upload-field screenshot-field';
         div.setAttribute('data-drop-zone', fieldId);
-        div.innerHTML = `
-            <div class="flex justify-end mb-2">
-                 <button type="button" class="remove-btn bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded">Remove</button>
-            </div>
-            <div class="text-center p-4 border-2 border-dashed border-gray-600 rounded-lg">
-                <label for="${fieldId}" class="cursor-pointer text-sm bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded">Choose or Drop</label>
-                <input type="file" id="${fieldId}" class="hidden" data-upload-target="${fieldId}" accept="image/*">
-                <span data-status="${fieldId}" class="upload-status text-xs text-gray-400 block mt-2"></span>
-            </div>
-            <p class="text-center my-2 text-gray-500 text-xs">OR</p>
-            <input type="url" placeholder="Paste screenshot URL" value="${url}" data-url-target="${fieldId}" class="form-input w-full screenshot-url-input">
-            <img src="${url}" alt="Screenshot Preview" data-preview="${fieldId}" class="screenshot-preview mt-2 rounded ${url ? '' : 'hidden'}" style="max-height: 150px;">
-        `;
+        div.innerHTML = `<div class="flex justify-end mb-2"><button type="button" class="remove-btn bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded">Remove</button></div><div class="text-center p-4 border-2 border-dashed border-gray-600 rounded-lg"><label for="${fieldId}" class="cursor-pointer text-sm bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded">Choose or Drop</label><input type="file" id="${fieldId}" class="hidden" data-upload-target="${fieldId}" accept="image/*"><span data-status="${fieldId}" class="upload-status text-xs text-gray-400 block mt-2"></span></div><p class="text-center my-2 text-gray-500 text-xs">OR</p><input type="url" placeholder="Paste screenshot URL" value="${url}" data-url-target="${fieldId}" class="form-input w-full screenshot-url-input"><img src="${url}" alt="Screenshot Preview" data-preview="${fieldId}" class="screenshot-preview mt-2 rounded ${url ? '' : 'hidden'}" style="max-height: 150px;">`;
         screenshotsContainer.appendChild(div);
     };
 
