@@ -39,17 +39,25 @@ const initializePopup = () => {
 };
 
 const renderMovieCard = (movie) => {
-    // --- THIS IS THE FIX ---
-    // The logic now creates two separate tags with different positioning classes.
-    const qualityTagHtml = `<div class="absolute top-2 right-2 bg-cyan-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">${movie.quality || 'HD'}</div>`;
-    const seriesTagHtml = movie.type === 'Web Series' ? `<div class="absolute bottom-2 left-2 bg-green-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">SERIES</div>` : '';
+    // --- THIS IS THE NEW, CORRECTED LOGIC ---
+    // It uses responsive classes to change position on small screens (sm:)
+    let tagsHtml = '';
+    
+    // Quality Tag
+    if (movie.quality) {
+        tagsHtml += `<div class="absolute top-2 right-2 bg-cyan-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">${movie.quality}</div>`;
+    }
+    
+    // Series Tag - different position on mobile vs desktop
+    if (movie.type === 'Web Series') {
+        tagsHtml += `<div class="absolute top-2 left-2 sm:bottom-2 sm:top-auto bg-green-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">SERIES</div>`;
+    }
 
     return `
         <a href="movie.html?id=${movie.id}" class="group block bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-cyan-500/50 transition-shadow duration-300">
             <div class="relative">
                 <img src="${movie.posterUrl}" alt="${movie.title}" class="w-full h-auto aspect-[2/3] object-cover transform group-hover:scale-105 transition-transform duration-300">
-                ${qualityTagHtml}
-                ${seriesTagHtml}
+                ${tagsHtml}
             </div>
             <div class="p-3">
                 <h3 class="text-md font-bold truncate group-hover:text-cyan-400">${movie.title}</h3>
