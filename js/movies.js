@@ -67,11 +67,9 @@ const renderHomepage = async () => {
             const genres = [...new Set(movies.flatMap(m => m.genres || []))].sort();
             const years = [...new Set(movies.map(m => m.year))].sort((a, b) => b - a);
             const categories = [...new Set(movies.map(m => m.category).filter(Boolean))].sort();
-
             const genreFilter = document.getElementById('genre-filter');
             const yearFilter = document.getElementById('year-filter');
             const categoryFilter = document.getElementById('category-filter');
-
             genres.forEach(g => genreFilter.innerHTML += `<option value="${g}">${g}</option>`);
             years.forEach(y => yearFilter.innerHTML += `<option value="${y}">${y}</option>`);
             categories.forEach(c => categoryFilter.innerHTML += `<option value="${c}">${c}</option>`);
@@ -92,22 +90,12 @@ const renderHomepage = async () => {
             const selectedGenre = document.getElementById('genre-filter').value;
             const selectedYear = document.getElementById('year-filter').value;
             const selectedCategory = document.getElementById('category-filter').value;
-            
-            const filtered = movies.filter(movie => 
-                ((movie.genres || []).includes(selectedGenre) || !selectedGenre) && 
-                movie.title.toLowerCase().includes(searchTerm) && 
-                (!selectedYear || movie.year == selectedYear) && 
-                (!selectedCategory || movie.category === selectedCategory)
-            );
+            const filtered = movies.filter(movie => ((movie.genres || []).includes(selectedGenre) || !selectedGenre) && movie.title.toLowerCase().includes(searchTerm) && (!selectedYear || movie.year == selectedYear) && (!selectedCategory || movie.category === selectedCategory));
             displayMovies(filtered);
         };
         
-        if (movies.length === 0) {
-            displayMovies([]);
-        } else {
-            populateFilters(movies);
-            displayMovies(movies);
-        }
+        if (movies.length === 0) { displayMovies([]); }
+        else { populateFilters(movies); displayMovies(movies); }
         
         ['search-input', 'genre-filter', 'year-filter', 'category-filter'].forEach(id => {
             const el = document.getElementById(id);
@@ -122,53 +110,37 @@ const renderHomepage = async () => {
 const handleRequestForm = () => {
     const form = document.getElementById('request-form');
     if (!form) return;
-
     const userDetailsSection = document.getElementById('user-details-section');
     const nameInput = document.getElementById('request-name');
-    
     const savedUserName = localStorage.getItem('flickCinemaUserName');
     if (!savedUserName) {
         userDetailsSection.classList.remove('hidden');
         nameInput.required = true;
     }
-
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const submitBtn = document.getElementById('request-submit-btn');
         const messageDiv = document.getElementById('request-message');
-        
         const title = document.getElementById('request-title').value.trim();
         const notes = document.getElementById('request-notes').value.trim();
-        
         let userName = savedUserName || nameInput.value.trim();
-
         if (!title || !userName) {
             messageDiv.textContent = "Please fill out all required fields.";
             messageDiv.className = "mt-4 text-red-400";
             return;
         }
-
         submitBtn.disabled = true;
         submitBtn.textContent = "Submitting...";
-        
         try {
-            await addMovieRequest({
-                title,
-                notes,
-                userName,
-                requestedAt: new Date()
-            });
-            
+            await addMovieRequest({ title, notes, userName, requestedAt: new Date() });
             if (!savedUserName) {
                 localStorage.setItem('flickCinemaUserName', userName);
                 userDetailsSection.classList.add('hidden');
             }
-
             messageDiv.textContent = "Thank you! Your request has been sent.";
             messageDiv.className = "mt-4 text-green-400";
             form.reset();
             document.getElementById('request-title').value = title;
-
         } catch (err) {
             messageDiv.textContent = "Something went wrong. Please try again.";
             messageDiv.className = "mt-4 text-red-400";
@@ -178,6 +150,45 @@ const handleRequestForm = () => {
         }
     });
 };
+
+const renderRecommendations = async (currentMovie) => {
+    const recommendationsSection = document.getElementById('recommendations-section');
+    const recommendationsGrid = document.getElementById('recommendations-grid');
+    if (!recommendationsSection || !recommendationsGrid) return;
+    
+    const allMovies = await getMovies();
+    const recommended = [];
+    
+    // 1. Find by same category
+    if (currentMovie.category) {
+        const byCategory = allMovies.filter(m => m.id !== currentMovie.id && m.category === currentMovie.category);
+        recommended.push(...byCategory);
+    }
+
+    // 2. Find by same genres
+    if (currentMovie.genres && currentMovie.genres.length > 0) {
+        const byGenre = allMovies.filter(m => {
+            // Avoid duplicates and self-recommendation
+            if (m.id === currentMovie.id || recommended.some(rec => rec.id === m.id)) return false;
+            // Check if there is at least one common genre
+            return (m.genres || []).some(genre => currentMovie.genres.includes(genre));
+        });
+        recommended.push(...byGenre);
+    }
+
+    // Remove duplicates just in case and shuffle the results
+    const uniqueRecommended = [...new Map(recommended.map(item => [item.id, item])).values()];
+    const shuffled = uniqueRecommended.sort(() => 0.5 - Math.random());
+    
+    // Get up to 5 recommendations
+    const finalRecommendations = shuffled.slice(0, 5);
+    
+    if (finalRecommendations.length > 0) {
+        recommendationsGrid.innerHTML = finalRecommendations.map(renderMovieCard).join('');
+        recommendationsSection.classList.remove('hidden');
+    }
+};
+
 
 const renderMovieDetailPage = async () => {
     const params = new URLSearchParams(window.location.search);
@@ -239,6 +250,9 @@ const renderMovieDetailPage = async () => {
         
         downloadsContainer.innerHTML = downloadsHtml || '<p class="text-gray-400">No download links available.</p>';
         movieContent.style.display = 'block';
+
+        // Render recommendations after main content is loaded
+        renderRecommendations(movie);
 
     } catch (error) {
         console.error("Error loading movie details:", error);
