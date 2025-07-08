@@ -38,22 +38,30 @@ const initializePopup = () => {
     }
 };
 
-const renderMovieCard = (movie) => `
-    <a href="movie.html?id=${movie.id}" class="group block bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-cyan-500/50 transition-shadow duration-300">
-        <div class="relative">
-            <img src="${movie.posterUrl}" alt="${movie.title}" class="w-full h-auto aspect-[2/3] object-cover transform group-hover:scale-105 transition-transform duration-300">
-            <div class="absolute top-2 right-2 bg-cyan-500 text-white text-xs font-bold px-2 py-1 rounded">${movie.quality || 'HD'}</div>
-            ${movie.type === 'Web Series' ? '<div class="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">SERIES</div>' : ''}
-        </div>
-        <div class="p-3">
-            <h3 class="text-md font-bold truncate group-hover:text-cyan-400">${movie.title}</h3>
-            <div class="text-xs text-gray-400 mt-1">
-                <span>${movie.year}</span> •
-                <span class="truncate">${(movie.genres || []).join(', ')}</span>
+const renderMovieCard = (movie) => {
+    // --- THIS IS THE FIX ---
+    // The logic now creates two separate tags with different positioning classes.
+    const qualityTagHtml = `<div class="absolute top-2 right-2 bg-cyan-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">${movie.quality || 'HD'}</div>`;
+    const seriesTagHtml = movie.type === 'Web Series' ? `<div class="absolute bottom-2 left-2 bg-green-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">SERIES</div>` : '';
+
+    return `
+        <a href="movie.html?id=${movie.id}" class="group block bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-cyan-500/50 transition-shadow duration-300">
+            <div class="relative">
+                <img src="${movie.posterUrl}" alt="${movie.title}" class="w-full h-auto aspect-[2/3] object-cover transform group-hover:scale-105 transition-transform duration-300">
+                ${qualityTagHtml}
+                ${seriesTagHtml}
             </div>
-        </div>
-    </a>
-`;
+            <div class="p-3">
+                <h3 class="text-md font-bold truncate group-hover:text-cyan-400">${movie.title}</h3>
+                <div class="text-xs text-gray-400 mt-1">
+                    <span>${movie.year}</span> •
+                    <span class="truncate">${(movie.genres || []).join(', ')}</span>
+                </div>
+            </div>
+        </a>
+    `;
+};
+
 
 const renderHomepage = async (initialSearchTerm = '') => {
     const movieGrid = document.getElementById('movie-grid');
@@ -186,18 +194,16 @@ const renderRecommendations = async (currentMovie) => {
 };
 
 const initializeMoviePageSearch = () => {
-    // This listener waits for the #search-icon-btn to be added to the DOM by header-footer.js
     const observer = new MutationObserver((mutations, obs) => {
         const searchIconBtn = document.getElementById('search-icon-btn');
         if (searchIconBtn) {
             const searchBarContainer = document.getElementById('search-bar-container');
             let isSearchVisible = false;
-
             const showSearchBar = () => {
                 searchBarContainer.innerHTML = `<div id="movie-page-search-bar" class="fixed top-[-100px] left-0 right-0 bg-gray-900/90 backdrop-blur-sm p-4 z-30 shadow-lg"><div class="container mx-auto"><form id="movie-page-search-form" class="flex gap-2"><input type="search" id="movie-page-search-input" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500" placeholder="Search for another movie..."><button type="submit" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-lg">Search</button></form></div></div>`;
                 setTimeout(() => {
                     const searchBar = document.getElementById('movie-page-search-bar');
-                    if (searchBar) searchBar.style.top = '68px'; // Adjust based on header height
+                    if (searchBar) searchBar.style.top = '68px';
                 }, 10);
                 document.getElementById('movie-page-search-form').addEventListener('submit', (e) => {
                     e.preventDefault();
@@ -206,7 +212,6 @@ const initializeMoviePageSearch = () => {
                 });
                 isSearchVisible = true;
             };
-
             const hideSearchBar = () => {
                 const searchBar = document.getElementById('movie-page-search-bar');
                 if (searchBar) {
@@ -215,15 +220,13 @@ const initializeMoviePageSearch = () => {
                 }
                 isSearchVisible = false;
             };
-
             searchIconBtn.addEventListener('click', () => {
                 if (isSearchVisible) hideSearchBar();
                 else showSearchBar();
             });
-            obs.disconnect(); // We found the button, we don't need to observe anymore
+            obs.disconnect();
         }
     });
-
     observer.observe(document.body, { childList: true, subtree: true });
 };
 
@@ -231,11 +234,9 @@ const renderMovieDetailPage = async () => {
     const params = new URLSearchParams(window.location.search);
     const movieId = params.get('id');
     if (!movieId) return window.location.href = 'index.html';
-
     const loadingSpinner = document.getElementById('loading-spinner');
     const movieContent = document.getElementById('movie-content');
     const errorMessage = document.getElementById('error-message');
-
     try {
         const movie = await getMovieById(movieId);
         loadingSpinner.style.display = 'none';
