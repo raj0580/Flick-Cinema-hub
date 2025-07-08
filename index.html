@@ -8,7 +8,7 @@
     <link rel="icon" href="https://img.icons8.com/plasticine/100/film-reel.png" type="image/png">
     
     <style>
-        .ad-container { max-width: 100%; overflow: hidden; display: flex; justify-content: center; align-items: center; margin: 1.5rem auto; background-color: rgba(0,0,0,0.2); border-radius: 0.5rem; }
+        .ad-container { max-width: 100%; overflow: hidden; display: flex; justify-content: center; align-items: center; margin: 1.5rem auto; }
         #filters input, #filters select { padding: 0.75rem; border-radius: 0.5rem; color: #ffffff; background-color: #374151; border: 1px solid #4B5563; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; }
         #filters input { background-image: none; }
         #filters input:focus, #filters select:focus { outline: none; border-color: #06b6d4; box-shadow: 0 0 0 2px #06b6d4; }
@@ -20,13 +20,7 @@
 
     <main class="container mx-auto px-4 py-6">
         
-        <!-- Top Banner Ad (728x90) -->
-        <div class="ad-container">
-            <script type="text/javascript">
-                atOptions = { 'key' : 'a4865b7ef060ebcfa9a02db3af6569bc', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };
-            </script>
-            <script type="text/javascript" src="//www.highperformanceformat.com/a4865b7ef060ebcfa9a02db3af6569bc/invoke.js"></script>
-        </div>
+        <div class="ad-container"><script type="text/javascript"> atOptions = { 'key' : 'a4865b7ef060ebcfa9a02db3af6569bc', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} }; </script><script type="text/javascript" src="//www.highperformanceformat.com/a4865b7ef060ebcfa9a02db3af6569bc/invoke.js"></script></div>
 
         <section id="filters" class="mb-8 p-4 bg-gray-800 rounded-lg space-y-4">
             <div><input type="search" id="search-input" placeholder="Search by title..." class="w-full"></div>
@@ -38,41 +32,41 @@
                 <h2 class="text-3xl font-bold mb-6 border-l-4 border-cyan-400 pl-4">Latest Movies</h2>
                 <div id="loading-spinner" class="text-center py-10"><div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-500 mx-auto"></div><p class="mt-4">Loading Movies...</p></div>
                 <div id="movie-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6"></div>
+                
                 <div id="no-results-section" class="hidden text-center bg-gray-800 p-8 rounded-lg mt-10">
                     <h3 class="text-2xl font-bold text-white mb-2">Movie Not Found?</h3>
                     <p class="text-gray-400 mb-6">Let us know what you were looking for and we'll try to add it!</p>
                     <a href="https://t.me/your_request_channel" target="_blank" class="mb-6 inline-block w-full max-w-sm bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-4 rounded-lg transition-colors text-lg">Request on Telegram</a>
                     <div class="flex items-center justify-center my-4"><span class="h-px flex-1 bg-gray-700"></span><span class="px-4 text-xs font-bold text-gray-500">OR</span><span class="h-px flex-1 bg-gray-700"></span></div>
                     <form id="request-form" class="max-w-sm mx-auto text-left">
-                        <div class="mb-4"><label for="request-title" class="block text-sm font-medium text-gray-300 mb-1">Movie Title</label><input type="text" id="request-title" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600" required><p class="text-xs text-gray-500 mt-1">Note: Please include the year for better accuracy (e.g., "The Matrix 1999").</p></div>
-                        <div id="user-details-section" class="hidden space-y-4 mb-4">
-                            <p class="text-sm text-yellow-400">Please enter your details once. We'll remember you for next time.</p>
-                             <div><label for="request-name" class="block text-sm font-medium text-gray-300 mb-1">Your Name</label><input type="text" id="request-name" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600"></div>
-                             <div><label for="request-email" class="block text-sm font-medium text-gray-300 mb-1">Your Email</label><input type="email" id="request-email" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600"></div>
+                        <div class="mb-4">
+                            <label for="request-title" class="block text-sm font-medium text-gray-300 mb-1">Movie Title</label>
+                            <input type="text" id="request-title" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500" required>
+                            <p class="text-xs text-gray-500 mt-1">Note: Please include the year for better accuracy (e.g., "The Matrix 1999").</p>
                         </div>
-                        <div class="mb-4"><label for="request-notes" class="block text-sm font-medium text-gray-300 mb-1">Additional Notes (Optional)</label><input type="text" id="request-notes" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600"></div>
+                        
+                        <!-- UPDATED User Details section (Email removed) -->
+                        <div id="user-details-section" class="hidden space-y-4 mb-4">
+                            <p class="text-sm text-yellow-400">Please enter your name once. We'll remember you for next time.</p>
+                             <div>
+                                <label for="request-name" class="block text-sm font-medium text-gray-300 mb-1">Your Name</label>
+                                <input type="text" id="request-name" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="request-notes" class="block text-sm font-medium text-gray-300 mb-1">Additional Notes (Optional)</label>
+                            <input type="text" id="request-notes" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500">
+                        </div>
                         <button type="submit" id="request-submit-btn" class="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-lg transition">Submit Request</button>
                     </form>
                     <div id="request-message" class="mt-4 text-green-400"></div>
                 </div>
+
             </div>
-            <!-- Sidebar Ad (160x300) -->
-            <aside id="ad-sidebar" class="w-full md:w-48 flex-shrink-0">
-                <div class="sticky top-24 text-center ad-container">
-                    <script type="text/javascript">
-                        atOptions = { 'key' : '4e2abba58d7e187c65c198085a724e40', 'format' : 'iframe', 'height' : 300, 'width' : 160, 'params' : {} };
-                    </script>
-                    <script type="text/javascript" src="//www.highperformanceformat.com/4e2abba58d7e187c65c198085a724e40/invoke.js"></script>
-                </div>
-            </aside>
+            <aside id="ad-sidebar" class="w-full md:w-48 flex-shrink-0"><div class="sticky top-24 text-center ad-container"><script type="text/javascript"> atOptions = { 'key' : '4e2abba58d7e187c65c198085a724e40', 'format' : 'iframe', 'height' : 300, 'width' : 160, 'params' : {} }; </script><script type="text/javascript" src="//www.highperformanceformat.com/4e2abba58d7e187c65c198085a724e40/invoke.js"></script></div></aside>
         </div>
-        <!-- Bottom Ad (468x60) -->
-        <div class="ad-container">
-            <script type="text/javascript">
-                atOptions = { 'key' : '64ec21bcf50c2c2878c9f37a11f41697', 'format' : 'iframe', 'height' : 60, 'width' : 468, 'params' : {} };
-            </script>
-            <script type="text/javascript" src="//www.highperformanceformat.com/64ec21bcf50c2c2878c9f37a11f41697/invoke.js"></script>
-        </div>
+        <div class="ad-container"><script type="text/javascript"> atOptions = { 'key' : '64ec21bcf50c2c2878c9f37a11f41697', 'format' : 'iframe', 'height' : 60, 'width' : 468, 'params' : {} }; </script><script type="text/javascript" src="//www.highperformanceformat.com/64ec21bcf50c2c2878c9f37a11f41697/invoke.js"></script></div>
     </main>
 
     <div id="footer-placeholder"></div>
