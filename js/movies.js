@@ -186,36 +186,45 @@ const renderRecommendations = async (currentMovie) => {
 };
 
 const initializeMoviePageSearch = () => {
-    const searchIconBtn = document.getElementById('search-icon-btn');
-    const searchBarContainer = document.getElementById('search-bar-container');
-    if (searchIconBtn) searchIconBtn.classList.remove('hidden');
-    else return;
-    let isSearchVisible = false;
-    const showSearchBar = () => {
-        searchBarContainer.innerHTML = `<div id="movie-page-search-bar" class="fixed top-[-100px] left-0 right-0 bg-gray-900/90 backdrop-blur-sm p-4 z-30 shadow-lg"><div class="container mx-auto"><form id="movie-page-search-form" class="flex gap-2"><input type="search" id="movie-page-search-input" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500" placeholder="Search for another movie..."><button type="submit" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-lg">Search</button></form></div></div>`;
-        setTimeout(() => {
-            const searchBar = document.getElementById('movie-page-search-bar');
-            if (searchBar) searchBar.style.top = '68px';
-        }, 10);
-        document.getElementById('movie-page-search-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const searchTerm = document.getElementById('movie-page-search-input').value;
-            if (searchTerm) window.location.href = `index.html?search=${encodeURIComponent(searchTerm)}`;
-        });
-        isSearchVisible = true;
-    };
-    const hideSearchBar = () => {
-        const searchBar = document.getElementById('movie-page-search-bar');
-        if (searchBar) {
-            searchBar.style.top = '-100px';
-            setTimeout(() => { searchBarContainer.innerHTML = ''; }, 300);
+    // This listener waits for the #search-icon-btn to be added to the DOM by header-footer.js
+    const observer = new MutationObserver((mutations, obs) => {
+        const searchIconBtn = document.getElementById('search-icon-btn');
+        if (searchIconBtn) {
+            const searchBarContainer = document.getElementById('search-bar-container');
+            let isSearchVisible = false;
+
+            const showSearchBar = () => {
+                searchBarContainer.innerHTML = `<div id="movie-page-search-bar" class="fixed top-[-100px] left-0 right-0 bg-gray-900/90 backdrop-blur-sm p-4 z-30 shadow-lg"><div class="container mx-auto"><form id="movie-page-search-form" class="flex gap-2"><input type="search" id="movie-page-search-input" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500" placeholder="Search for another movie..."><button type="submit" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-lg">Search</button></form></div></div>`;
+                setTimeout(() => {
+                    const searchBar = document.getElementById('movie-page-search-bar');
+                    if (searchBar) searchBar.style.top = '68px'; // Adjust based on header height
+                }, 10);
+                document.getElementById('movie-page-search-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const searchTerm = document.getElementById('movie-page-search-input').value;
+                    if (searchTerm) window.location.href = `index.html?search=${encodeURIComponent(searchTerm)}`;
+                });
+                isSearchVisible = true;
+            };
+
+            const hideSearchBar = () => {
+                const searchBar = document.getElementById('movie-page-search-bar');
+                if (searchBar) {
+                    searchBar.style.top = '-100px';
+                    setTimeout(() => { searchBarContainer.innerHTML = ''; }, 300);
+                }
+                isSearchVisible = false;
+            };
+
+            searchIconBtn.addEventListener('click', () => {
+                if (isSearchVisible) hideSearchBar();
+                else showSearchBar();
+            });
+            obs.disconnect(); // We found the button, we don't need to observe anymore
         }
-        isSearchVisible = false;
-    };
-    searchIconBtn.addEventListener('click', () => {
-        if (isSearchVisible) hideSearchBar();
-        else showSearchBar();
     });
+
+    observer.observe(document.body, { childList: true, subtree: true });
 };
 
 const renderMovieDetailPage = async () => {
