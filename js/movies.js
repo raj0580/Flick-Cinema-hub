@@ -102,8 +102,12 @@ const renderHomepage = async () => {
             displayMovies(filtered);
         };
         
-        if (movies.length === 0) { displayMovies([]); }
-        else { populateFilters(movies); displayMovies(movies); }
+        if (movies.length === 0) {
+            displayMovies([]);
+        } else {
+            populateFilters(movies);
+            displayMovies(movies);
+        }
         
         ['search-input', 'genre-filter', 'year-filter', 'category-filter'].forEach(id => {
             const el = document.getElementById(id);
@@ -118,44 +122,53 @@ const renderHomepage = async () => {
 const handleRequestForm = () => {
     const form = document.getElementById('request-form');
     if (!form) return;
+
     const userDetailsSection = document.getElementById('user-details-section');
     const nameInput = document.getElementById('request-name');
-    const emailInput = document.getElementById('request-email');
-    const savedUser = JSON.parse(localStorage.getItem('flickCinemaUser'));
-    if (!savedUser) {
+    
+    const savedUserName = localStorage.getItem('flickCinemaUserName');
+    if (!savedUserName) {
         userDetailsSection.classList.remove('hidden');
         nameInput.required = true;
-        emailInput.required = true;
     }
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const submitBtn = document.getElementById('request-submit-btn');
         const messageDiv = document.getElementById('request-message');
+        
         const title = document.getElementById('request-title').value.trim();
         const notes = document.getElementById('request-notes').value.trim();
-        let userName = savedUser?.name;
-        let userEmail = savedUser?.email;
-        if (!savedUser) {
-            userName = nameInput.value.trim();
-            userEmail = emailInput.value.trim();
-        }
-        if (!title || (!savedUser && (!userName || !userEmail))) {
+        
+        let userName = savedUserName || nameInput.value.trim();
+
+        if (!title || !userName) {
             messageDiv.textContent = "Please fill out all required fields.";
             messageDiv.className = "mt-4 text-red-400";
             return;
         }
+
         submitBtn.disabled = true;
         submitBtn.textContent = "Submitting...";
+        
         try {
-            await addMovieRequest({ title, notes, userName, userEmail, requestedAt: new Date() });
-            if (!savedUser) {
-                localStorage.setItem('flickCinemaUser', JSON.stringify({ name: userName, email: userEmail }));
+            await addMovieRequest({
+                title,
+                notes,
+                userName,
+                requestedAt: new Date()
+            });
+            
+            if (!savedUserName) {
+                localStorage.setItem('flickCinemaUserName', userName);
                 userDetailsSection.classList.add('hidden');
             }
+
             messageDiv.textContent = "Thank you! Your request has been sent.";
             messageDiv.className = "mt-4 text-green-400";
-            document.getElementById('request-title').value = '';
-            document.getElementById('request-notes').value = '';
+            form.reset();
+            document.getElementById('request-title').value = title;
+
         } catch (err) {
             messageDiv.textContent = "Something went wrong. Please try again.";
             messageDiv.className = "mt-4 text-red-400";
