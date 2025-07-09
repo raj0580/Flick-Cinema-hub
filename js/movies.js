@@ -39,19 +39,15 @@ const initializePopup = () => {
 };
 
 const renderMovieCard = (movie) => {
-    // --- THIS IS THE NEW, CORRECTED LOGIC ---
-    // It uses responsive classes to change position on small screens (sm:)
-    let tagsHtml = '';
-    
-    // Quality Tag
-    if (movie.quality) {
-        tagsHtml += `<div class="absolute top-2 right-2 bg-cyan-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">${movie.quality}</div>`;
-    }
-    
-    // Series Tag - different position on mobile vs desktop
-    if (movie.type === 'Web Series') {
-        tagsHtml += `<div class="absolute top-2 left-2 sm:bottom-2 sm:top-auto bg-green-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">SERIES</div>`;
-    }
+    // --- THIS IS THE NEW, PERMANENT FIX ---
+    // The tags are now created inside a container that forces them to wrap correctly.
+    // The "SERIES" tag will naturally flow below the quality tag if there isn't enough space.
+    let tagsHtml = `
+        <div class="absolute top-2 right-2 flex flex-wrap justify-end gap-2">
+            ${movie.type === 'Web Series' ? `<span class="bg-green-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">SERIES</span>` : ''}
+            ${movie.quality ? `<span class="bg-cyan-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">${movie.quality}</span>` : ''}
+        </div>
+    `;
 
     return `
         <a href="movie.html?id=${movie.id}" class="group block bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-cyan-500/50 transition-shadow duration-300">
