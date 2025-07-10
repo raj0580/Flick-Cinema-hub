@@ -1,7 +1,7 @@
 import { getMovies, addMovie, updateMovie, deleteMovie, getMovieById, getMovieRequests, deleteMovieRequest } from './db.js';
 
 // --- NEW ROBUST UPLOAD CONFIGURATION ---
-const IMAGEKIT_PUBLIC_KEY = 'public_rRaC5klokC8DnLZhzhukS3QSqt4='; 
+const IMAGEKIT_PUBLIC_KEY = 'public_6l4qw98xf+vlTejXDPnJumHZSBM='; 
 const IMAGEKIT_UPLOAD_URL = 'https://upload.imagekit.io/api/v1/files/upload';
 
 const IMGUR_CLIENT_ID = 'YOUR_IMGUR_CLIENT_ID_HERE'; // Replace this with your actual Imgur Client ID
