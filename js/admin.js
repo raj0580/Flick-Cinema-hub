@@ -1,10 +1,8 @@
 import { getMovies, addMovie, updateMovie, deleteMovie, getMovieById, getMovieRequests, deleteMovieRequest } from './db.js';
 
-// --- NEW ROBUST UPLOAD CONFIGURATION ---
-const IMAGEKIT_PUBLIC_KEY = 'public_6l4qw98xf+vlTejXDPnJumHZSBM='; 
+// --- IMAGEKIT.IO UPLOAD CONFIGURATION ---
+const IMAGEKIT_PUBLIC_KEY = 'public_6l4qw98xf+vlTejXDPnJumHZSBM='; // <-- REPLACE WITH YOUR NEW PUBLIC KEY
 const IMAGEKIT_UPLOAD_URL = 'https://upload.imagekit.io/api/v1/files/upload';
-
-const IMGUR_CLIENT_ID = 'YOUR_IMGUR_CLIENT_ID_HERE'; // Replace this with your actual Imgur Client ID
 
 const ALL_GENRES = ['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Family', 'Fantasy', 'History', 'Horror', 'Music', 'Mystery', 'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western'];
 
@@ -157,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
         statusEl.style.color = '#9CA3AF';
         
         try {
-            if (!IMAGEKIT_PUBLIC_KEY || IMAGEKIT_PUBLIC_KEY === 'YOUR_NEW_IMAGEKIT_PUBLIC_KEY') {
+            if (!IMAGEKIT_PUBLIC_KEY || IMAGEKIT_PUBLIC_KEY.includes('YOUR_NEW')) {
                 throw new Error("ImageKit Public Key is not configured.");
             }
             const formData = new FormData();
@@ -170,7 +168,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData
             });
 
-            if (!response.ok) throw new Error(`ImageKit API Error: ${response.statusText}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `ImageKit API Error: ${response.statusText}`);
+            }
             
             const result = await response.json();
             const imageUrl = result.url;
@@ -178,46 +179,11 @@ document.addEventListener('DOMContentLoaded', () => {
             urlInput.value = imageUrl;
             previewEl.src = imageUrl;
             previewEl.classList.remove('hidden');
-            statusEl.textContent = 'Success (ImageKit)!';
+            statusEl.textContent = 'Success!';
             statusEl.style.color = '#10B981';
-            return;
 
         } catch (error) {
-            console.warn('ImageKit upload failed, falling back to Imgur...', error);
-        }
-
-        statusEl.textContent = 'Primary failed, trying backup...';
-        try {
-            if (!IMGUR_CLIENT_ID || IMGUR_CLIENT_ID === 'YOUR_IMGUR_CLIENT_ID_HERE') {
-                throw new Error("Imgur Client ID is not configured.");
-            }
-
-            const formData = new FormData();
-            formData.append('image', file);
-            
-            const response = await fetch('https://api.imgur.com/3/image', {
-                method: 'POST',
-                headers: { 'Authorization': `Client-ID ${IMGUR_CLIENT_ID}` },
-                body: formData
-            });
-
-            if (!response.ok) throw new Error(`Imgur API returned status ${response.status}`);
-            
-            const result = await response.json();
-
-            if (result.success) {
-                const imageUrl = result.data.link;
-                urlInput.value = imageUrl;
-                previewEl.src = imageUrl;
-                previewEl.classList.remove('hidden');
-                statusEl.textContent = 'Success (Imgur)!';
-                statusEl.style.color = '#10B981';
-            } else {
-                throw new Error('Imgur upload failed, data.success was false.');
-            }
-
-        } catch (error) {
-            console.error('All upload methods failed:', error);
+            console.error('Upload failed:', error);
             statusEl.textContent = `Upload failed: ${error.message}`;
             statusEl.style.color = '#EF4444';
         }
