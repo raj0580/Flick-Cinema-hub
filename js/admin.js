@@ -1,6 +1,13 @@
 import { getMovies, addMovie, updateMovie, deleteMovie, getMovieById, getMovieRequests, deleteMovieRequest } from './db.js';
 
-const IMGBB_API_KEY = '5090ec8c335078581b53f917f9657083';
+// --- NEW ROBUST UPLOAD CONFIGURATION ---
+// IMPORTANT: Replace with your NEW ImageKit Public Key
+const IMAGEKIT_PUBLIC_KEY = 'YOUR_NEW_IMAGEKIT_PUBLIC_KEY'; 
+const IMAGEKIT_UPLOAD_URL = 'https://upload.imagekit.io/api/v1/files/upload';
+
+// Imgur is now a backup. Replace with your Client ID.
+const IMGUR_CLIENT_ID = 'YOUR_IMGUR_CLIENT_ID_HERE';
+
 const ALL_GENRES = ['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Family', 'Fantasy', 'History', 'Horror', 'Music', 'Mystery', 'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western'];
 
 const cleanDownloadUrl = (rawUrl) => {
@@ -147,19 +154,77 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const handleImageUpload = async (file, urlInput, previewEl, statusEl) => {
         if (!file) return;
+
         statusEl.textContent = 'Uploading...';
-        const formData = new FormData();
-        formData.append('image', file);
+        statusEl.style.color = '#9CA3AF';
+        
+        // --- Attempt 1: ImageKit.io (Primary) ---
         try {
-            const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+            if (!IMAGEKIT_PUBLIC_KEY || IMAGEKIT_PUBLIC_KEY === 'YOUR_NEW_IMAGEKIT_PUBLIC_KEY') {
+                throw new Error("ImageKit Public Key is not configured.");
+            }
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('publicKey', IMAGEKIT_PUBLIC_KEY);
+            formData.append('fileName', file.name);
+
+            const response = await fetch(IMAGEKIT_UPLOAD_URL, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) throw new Error(`ImageKit API Error: ${response.statusText}`);
+            
             const result = await response.json();
+            const imageUrl = result.url;
+            
+            urlInput.value = imageUrl;
+            previewEl.src = imageUrl;
+            previewEl.classList.remove('hidden');
+            statusEl.textContent = 'Success (ImageKit)!';
+            statusEl.style.color = '#10B981';
+            return; // Exit on success
+
+        } catch (error) {
+            console.warn('ImageKit upload failed, falling back to Imgur...', error);
+        }
+
+        // --- Attempt 2: Imgur (Backup) ---
+        statusEl.textContent = 'Primary failed, trying backup...';
+        try {
+            if (!IMGUR_CLIENT_ID || IMGUR_CLIENT_ID === 'YOUR_IMGUR_CLIENT_ID_HERE') {
+                throw new Error("Imgur Client ID is not configured.");
+            }
+
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            const response = await fetch('https://api.imgur.com/3/image', {
+                method: 'POST',
+                headers: { 'Authorization': `Client-ID ${IMGUR_CLIENT_ID}` },
+                body: formData
+            });
+
+            if (!response.ok) throw new Error(`Imgur API returned status ${response.status}`);
+            
+            const result = await response.json();
+
             if (result.success) {
-                urlInput.value = result.data.url;
-                previewEl.src = result.data.url;
+                const imageUrl = result.data.link;
+                urlInput.value = imageUrl;
+                previewEl.src = imageUrl;
                 previewEl.classList.remove('hidden');
-                statusEl.textContent = 'Success!';
-            } else { throw new Error(result.error.message); }
-        } catch (error) { statusEl.textContent = 'Upload failed!'; }
+                statusEl.textContent = 'Success (Imgur)!';
+                statusEl.style.color = '#10B981';
+            } else {
+                throw new Error('Imgur upload failed, data.success was false.');
+            }
+
+        } catch (error) {
+            console.error('All upload methods failed:', error);
+            statusEl.textContent = `Upload failed: ${error.message}`;
+            statusEl.style.color = '#EF4444';
+        }
     };
 
     const handleTypeChange = () => {
@@ -199,29 +264,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- NEW: DRAG AND DROP FUNCTIONALITY ---
     ['dragover', 'dragleave', 'drop'].forEach(eventName => {
         document.body.addEventListener(eventName, (e) => {
             const dropZone = e.target.closest('.upload-field');
             if (!dropZone) return;
-
             e.preventDefault();
             e.stopPropagation();
-
-            if (eventName === 'dragover') {
-                dropZone.classList.add('drag-over');
-            } else {
-                dropZone.classList.remove('drag-over');
-            }
-
+            if (eventName === 'dragover') dropZone.classList.add('drag-over');
+            else dropZone.classList.remove('drag-over');
             if (eventName === 'drop') {
                 const file = e.dataTransfer.files[0];
                 const urlInput = dropZone.querySelector('.poster-url-input, .screenshot-url-input');
                 const previewEl = dropZone.querySelector('#poster-preview, .screenshot-preview');
                 const statusEl = dropZone.querySelector('.upload-status');
-                if (file && urlInput && previewEl && statusEl) {
-                    handleImageUpload(file, urlInput, previewEl, statusEl);
-                }
+                if (file && urlInput && previewEl && statusEl) handleImageUpload(file, urlInput, previewEl, statusEl);
             }
         });
     });
