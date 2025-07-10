@@ -2,7 +2,7 @@ import { getMovies, addMovie, updateMovie, deleteMovie, getMovieById, getMovieRe
 
 // --- NEW ROBUST UPLOAD CONFIGURATION ---
 // IMPORTANT: Replace with your NEW ImageKit Public Key
-const IMAGEKIT_PUBLIC_KEY = 'YOUR_NEW_IMAGEKIT_PUBLIC_KEY'; 
+
 const IMAGEKIT_UPLOAD_URL = 'https://upload.imagekit.io/api/v1/files/upload';
 
 // Imgur is now a backup. Replace with your Client ID.
