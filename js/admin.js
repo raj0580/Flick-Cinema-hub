@@ -1,12 +1,10 @@
 import { getMovies, addMovie, updateMovie, deleteMovie, getMovieById, getMovieRequests, deleteMovieRequest } from './db.js';
 
 // --- NEW ROBUST UPLOAD CONFIGURATION ---
-// IMPORTANT: Replace with your NEW ImageKit Public Key
-
+const IMAGEKIT_PUBLIC_KEY = 'public_rRaC5klokC8DnLZhzhukS3QSqt4='; 
 const IMAGEKIT_UPLOAD_URL = 'https://upload.imagekit.io/api/v1/files/upload';
 
-// Imgur is now a backup. Replace with your Client ID.
-const IMGUR_CLIENT_ID = 'YOUR_IMGUR_CLIENT_ID_HERE';
+const IMGUR_CLIENT_ID = 'YOUR_IMGUR_CLIENT_ID_HERE'; // Replace this with your actual Imgur Client ID
 
 const ALL_GENRES = ['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Family', 'Fantasy', 'History', 'Horror', 'Music', 'Mystery', 'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western'];
 
@@ -158,7 +156,6 @@ document.addEventListener('DOMContentLoaded', () => {
         statusEl.textContent = 'Uploading...';
         statusEl.style.color = '#9CA3AF';
         
-        // --- Attempt 1: ImageKit.io (Primary) ---
         try {
             if (!IMAGEKIT_PUBLIC_KEY || IMAGEKIT_PUBLIC_KEY === 'YOUR_NEW_IMAGEKIT_PUBLIC_KEY') {
                 throw new Error("ImageKit Public Key is not configured.");
@@ -183,13 +180,12 @@ document.addEventListener('DOMContentLoaded', () => {
             previewEl.classList.remove('hidden');
             statusEl.textContent = 'Success (ImageKit)!';
             statusEl.style.color = '#10B981';
-            return; // Exit on success
+            return;
 
         } catch (error) {
             console.warn('ImageKit upload failed, falling back to Imgur...', error);
         }
 
-        // --- Attempt 2: Imgur (Backup) ---
         statusEl.textContent = 'Primary failed, trying backup...';
         try {
             if (!IMGUR_CLIENT_ID || IMGUR_CLIENT_ID === 'YOUR_IMGUR_CLIENT_ID_HERE') {
