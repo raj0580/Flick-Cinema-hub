@@ -65,9 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         ['title', 'year', 'description', 'trailerUrl', 'language', 'quality', 'posterUrl', 'category'].forEach(key => {
             const el = document.getElementById(key);
-            if (el && content[key]) {
-                el.value = content[key];
-            }
+            if (el && content[key]) el.value = content[key];
         });
         
         document.getElementById('tags').value = content.tags ? content.tags.join(', ') : '';
@@ -88,9 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isNewFormat) {
             (content.downloadLinks || []).forEach(group => addQualityGroupField(movieQualityGroupsContainer, group.quality, group.links));
         } else {
-            (content.downloadLinks || []).forEach(oldLink => {
-                addQualityGroupField(movieQualityGroupsContainer, oldLink.quality, [{ size: oldLink.size, url: oldLink.url }]);
-            });
+            (content.downloadLinks || []).forEach(oldLink => addQualityGroupField(movieQualityGroupsContainer, oldLink.quality, [{ size: oldLink.size, url: oldLink.url }]));
         }
         if (movieQualityGroupsContainer.childElementCount === 0) addQualityGroupField(movieQualityGroupsContainer);
         
@@ -201,6 +197,33 @@ document.addEventListener('DOMContentLoaded', () => {
             previewEl.src = target.value;
             previewEl.classList.toggle('hidden', !target.value);
         }
+    });
+
+    // --- NEW: DRAG AND DROP FUNCTIONALITY ---
+    ['dragover', 'dragleave', 'drop'].forEach(eventName => {
+        document.body.addEventListener(eventName, (e) => {
+            const dropZone = e.target.closest('.upload-field');
+            if (!dropZone) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (eventName === 'dragover') {
+                dropZone.classList.add('drag-over');
+            } else {
+                dropZone.classList.remove('drag-over');
+            }
+
+            if (eventName === 'drop') {
+                const file = e.dataTransfer.files[0];
+                const urlInput = dropZone.querySelector('.poster-url-input, .screenshot-url-input');
+                const previewEl = dropZone.querySelector('#poster-preview, .screenshot-preview');
+                const statusEl = dropZone.querySelector('.upload-status');
+                if (file && urlInput && previewEl && statusEl) {
+                    handleImageUpload(file, urlInput, previewEl, statusEl);
+                }
+            }
+        });
     });
 
     document.querySelectorAll('input[name="type"]').forEach(radio => radio.addEventListener('change', handleTypeChange));
