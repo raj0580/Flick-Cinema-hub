@@ -226,8 +226,8 @@ document.addEventListener('DOMContentLoaded', () => {
             else dropZone.classList.remove('drag-over');
             if (eventName === 'drop') {
                 const file = e.dataTransfer.files[0];
-                const urlInput = dropZone.querySelector('.poster-url-input');
-                const previewEl = dropZone.querySelector('img');
+                const urlInput = dropZone.querySelector('.poster-url-input, .screenshot-url-input');
+                const previewEl = dropZone.querySelector('#poster-preview, .screenshot-preview');
                 const statusEl = dropZone.querySelector('.upload-status');
                 if (file && urlInput && previewEl && statusEl) handleImageUpload(file, urlInput, previewEl, statusEl);
             }
@@ -279,13 +279,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { elements.moviesList.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">Failed to load content.</td></tr>`;} 
         finally { elements.loadingSpinner.innerHTML = ''; elements.moviesTable.classList.remove('hidden'); }
     };
-    
+
     const resetAdForm = () => {
         elements.adForm.reset();
         elements.adIdInput.value = '';
         elements.adImagePreview.src = '';
         elements.adImagePreview.classList.add('hidden');
-        elements.adForm.querySelector('button[type="submit"]').textContent = 'Add Ad';
+        elements.adForm.querySelector('button[type="submit"]').textContent = 'Save Ad';
         elements.adCancelBtn.classList.add('hidden');
         adEditMode = false;
     };
@@ -298,7 +298,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (ads.length === 0) {
                 elements.adsList.innerHTML = `<p class="text-gray-500 text-center">No ads created yet.</p>`;
             } else {
-                elements.adsList.innerHTML = ads.map(ad => `<div class="ad-row flex items-center justify-between gap-4"><img src="${ad.imageUrl}" class="h-12 w-24 object-contain rounded bg-gray-700"><div class="flex-1"><p class="text-sm text-white">${ad.location}</p><p class="text-xs text-gray-400 truncate">${ad.targetUrl}</p></div><div><button data-id="${ad.id}" class="ad-delete-btn bg-red-600 hover:bg-red-700 text-white text-sm py-1 px-2 rounded">Delete</button></div></div>`).join('');
+                elements.adsList.innerHTML = ads.map(ad => `
+                    <div class="ad-row flex items-center justify-between gap-4">
+                        <img src="${ad.imageUrl}" class="h-12 w-24 object-contain rounded bg-gray-700">
+                        <div class="flex-1"><p class="text-sm text-white">${ad.location}</p><p class="text-xs text-gray-400 truncate">${ad.targetUrl}</p></div>
+                        <div><button data-id="${ad.id}" class="ad-delete-btn bg-red-600 hover:bg-red-700 text-white text-sm py-1 px-2 rounded">Delete</button></div>
+                    </div>
+                `).join('');
             }
         } catch (error) {
             elements.adsList.innerHTML = `<p class="text-red-500 text-center">Failed to load ads.</p>`;
