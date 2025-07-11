@@ -16,7 +16,7 @@
         .genre-checkbox:checked + .genre-checkbox-label { background-color: #06b6d4; border-color: #0891b2; color: white; }
         .genre-checkbox { display: none; }
         .drag-over { border-style: dashed; border-color: #06b6d4; background-color: rgba(6, 182, 212, 0.1); }
-        .ad-row { border-bottom: 1px solid #4B5563; padding: 0.75rem 0; }
+        .promo-row { border-bottom: 1px solid #4B5563; padding: 0.75rem 0; }
     </style>
 </head>
 <body class="bg-gray-900 text-white font-sans">
@@ -58,18 +58,17 @@
         </section>
 
         <section class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
-            <h2 class="text-2xl font-bold mb-4">Ad Management</h2>
-            <form id="ad-form" class="mb-8">
-                <!-- THIS IS THE CRITICAL FIX -->
-                <input type="hidden" id="ad-id">
-                <div class="mb-4 upload-field"><label class="block text-gray-200 mb-2 font-semibold">Ad Image</label><div class="flex items-center gap-4"><label class="poster-upload-btn cursor-pointer inline-block bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded">Choose & Upload</label><input type="file" class="poster-upload-input hidden" accept="image/*"><span class="upload-status text-sm text-gray-400"></span></div><div><label for="ad-image-url" class="block text-gray-300 mb-1 text-sm mt-3">Or paste URL</label><input type="url" id="ad-image-url" class="form-input w-full poster-url-input"></div><div class="mt-4 text-center"><img id="ad-image-preview" src="" alt="Ad Preview" class="hidden max-w-xs mx-auto rounded-lg"></div></div>
-                <div class="mb-4"><label for="ad-target-url" class="block text-gray-300 mb-1">Target URL</label><input type="url" id="ad-target-url" class="form-input w-full"></div>
-                <div class="mb-4"><label for="ad-location" class="block text-gray-300 mb-1">Ad Location</label><select id="ad-location" class="form-input w-full"><option value="top-banner">Top Banner</option><option value="sidebar">Sidebar</option><option value="bottom">Bottom</option><option value="movie-top">Movie Page (Top)</option><option value="movie-bottom">Movie Page (Bottom)</option></select></div>
-                <div class="flex gap-4"><button type="submit" id="ad-submit-btn" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-6 rounded">Save Ad</button><button type="button" id="ad-cancel-btn" class="hidden bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded">Cancel Edit</button></div>
+            <h2 class="text-2xl font-bold mb-4">Promotion Management</h2>
+            <form id="promo-form" class="mb-8">
+                <input type="hidden" id="promo-id">
+                <div class="mb-4 upload-field"><label class="block text-gray-200 mb-2 font-semibold">Promo Image</label><div class="flex items-center gap-4"><label class="poster-upload-btn cursor-pointer inline-block bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded">Choose & Upload</label><input type="file" class="poster-upload-input hidden" accept="image/*"><span class="upload-status text-sm text-gray-400"></span></div><div><label for="promo-image-url" class="block text-gray-300 mb-1 text-sm mt-3">Or paste URL</label><input type="url" id="promo-image-url" class="form-input w-full poster-url-input"></div><div class="mt-4 text-center"><img id="promo-image-preview" src="" alt="Promo Preview" class="hidden max-w-xs mx-auto rounded-lg"></div></div>
+                <div class="mb-4"><label for="promo-target-url" class="block text-gray-300 mb-1">Target URL</label><input type="url" id="promo-target-url" class="form-input w-full"></div>
+                <div class="mb-4"><label for="promo-location" class="block text-gray-300 mb-1">Promo Location</label><select id="promo-location" class="form-input w-full"><option value="top-banner">Top Banner</option><option value="sidebar">Sidebar</option><option value="bottom">Bottom</option><option value="movie-top">Movie Page (Top)</option><option value="movie-bottom">Movie Page (Bottom)</option></select></div>
+                <div class="flex gap-4"><button type="submit" id="promo-submit-btn" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-6 rounded">Save Promo</button><button type="button" id="promo-cancel-btn" class="hidden bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded">Cancel Edit</button></div>
             </form>
-            <h3 class="text-xl font-bold mb-4">Existing Ads</h3>
-            <div id="ads-loading-spinner" class="text-center py-4"></div>
-            <div id="ads-list" class="space-y-3"></div>
+            <h3 class="text-xl font-bold mb-4">Existing Promos</h3>
+            <div id="promos-loading-spinner" class="text-center py-4"></div>
+            <div id="promos-list" class="space-y-3"></div>
         </section>
 
         <section class="my-12"><h2 class="text-2xl font-bold mb-4">Movie Requests</h2><div id="requests-loading-spinner" class="text-center py-10"></div><div id="requests-list" class="space-y-3"></div></section>
