@@ -45,8 +45,11 @@ const renderMovieCard = (movie) => {
 
 const renderAds = async () => {
     try {
-        const ads = await getAds();
-        ads.forEach(ad => {
+        const allAds = await getAds();
+        // Filter for only visible ads before trying to display them
+        const visibleAds = allAds.filter(ad => ad.visible === true);
+        
+        visibleAds.forEach(ad => {
             const adContainer = document.getElementById(`promo-${ad.location}`) || (ad.location === 'sidebar' ? document.getElementById('promo-sidebar-content') : null);
             if (adContainer) {
                 adContainer.innerHTML = `<a href="${ad.targetUrl}" target="_blank" rel="noopener sponsored"><img src="${ad.imageUrl}" alt="Advertisement" class="rounded-lg shadow-md"></a>`;
@@ -63,85 +66,7 @@ const renderHomepage = async (initialSearchTerm = '') => {
     const loadingSpinner = document.getElementById('loading-spinner');
     const noResultsSection = document.getElementById('no-results-section');
     const searchInput = document.getElementById('search-input');
-    const paginationContainer = document.getElementById('pagination-container');
-
-    const getItemsPerPage = () => window.innerWidth < 640 ? 10 : 20;
-    let itemsPerPage = getItemsPerPage();
-    
-    window.addEventListener('resize', () => {
-        itemsPerPage = getItemsPerPage();
-        filterAndDisplay(allMovies); 
-    });
-
     let allMovies = [];
-
-    const createPaginationControls = (totalPages, currentPage) => {
-        if (totalPages <= 1) {
-            paginationContainer.innerHTML = '';
-            return;
-        }
-        let buttons = '';
-        const maxButtons = 5;
-        buttons += `<a href="?page=${currentPage - 1}" class="page-link ${currentPage === 1 ? 'pointer-events-none opacity-50' : ''} px-3 py-2 bg-gray-700 rounded-md hover:bg-cyan-500">Prev</a>`;
-        let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
-        let endPage = Math.min(totalPages, startPage + maxButtons - 1);
-        if (endPage - startPage + 1 < maxButtons) {
-            startPage = Math.max(1, endPage - maxButtons + 1);
-        }
-        if (startPage > 1) {
-            buttons += `<a href="?page=1" class="page-link px-3 py-2 bg-gray-700 rounded-md hover:bg-cyan-500">1</a>`;
-            if (startPage > 2) {
-                buttons += `<span class="px-3 py-2 text-gray-400">...</span>`;
-            }
-        }
-        for (let i = startPage; i <= endPage; i++) {
-            buttons += `<a href="?page=${i}" class="page-link ${i === currentPage ? 'bg-blue-600 text-white' : 'bg-gray-700'} px-3 py-2 rounded-md hover:bg-cyan-500">${i}</a>`;
-        }
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) {
-                buttons += `<span class="px-3 py-2 text-gray-400">...</span>`;
-            }
-            buttons += `<a href="?page=${totalPages}" class="page-link px-3 py-2 bg-gray-700 rounded-md hover:bg-cyan-500">${totalPages}</a>`;
-        }
-        buttons += `<a href="?page=${currentPage + 1}" class="page-link ${currentPage === totalPages ? 'pointer-events-none opacity-50' : ''} px-3 py-2 bg-gray-700 rounded-md hover:bg-cyan-500">Next</a>`;
-        paginationContainer.innerHTML = buttons;
-    };
-
-    const displayMovies = (moviesToDisplay, page = 1) => {
-        const startIndex = (page - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const paginatedItems = moviesToDisplay.slice(startIndex, endIndex);
-
-        movieGrid.innerHTML = paginatedItems.map(renderMovieCard).join('');
-        
-        if (moviesToDisplay.length === 0) {
-            noResultsSection.style.display = 'block';
-            paginationContainer.innerHTML = '';
-            document.getElementById('request-title').value = searchInput.value;
-        } else {
-            noResultsSection.style.display = 'none';
-            const totalPages = Math.ceil(moviesToDisplay.length / itemsPerPage);
-            createPaginationControls(totalPages, page);
-        }
-    };
-
-    const filterAndDisplay = (movies) => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const currentPage = parseInt(urlParams.get('page')) || 1;
-        const searchTerm = searchInput.value.toLowerCase();
-        const selectedGenre = document.getElementById('genre-filter').value;
-        const selectedYear = document.getElementById('year-filter').value;
-        const selectedCategory = document.getElementById('category-filter').value;
-        
-        const filtered = movies.filter(movie => 
-            ((movie.genres || []).includes(selectedGenre) || !selectedGenre) && 
-            movie.title.toLowerCase().includes(searchTerm) && 
-            (!selectedYear || movie.year == selectedYear) && 
-            (!selectedCategory || movie.category === selectedCategory)
-        );
-        displayMovies(filtered, currentPage);
-    };
-
     try {
         allMovies = (await getMovies()).sort((a, b) => b.year - a.year);
         loadingSpinner.style.display = 'none';
@@ -157,23 +82,94 @@ const renderHomepage = async (initialSearchTerm = '') => {
             years.forEach(y => yearFilter.innerHTML += `<option value="${y}">${y}</option>`);
             categories.forEach(c => categoryFilter.innerHTML += `<option value="${c}">${c}</option>`);
         };
+
+        const displayMovies = (moviesToDisplay, page = 1) => {
+            const paginationContainer = document.getElementById('pagination-container');
+            const itemsPerPage = window.innerWidth < 640 ? 10 : 20;
+            const startIndex = (page - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedItems = moviesToDisplay.slice(startIndex, endIndex);
+
+            movieGrid.innerHTML = paginatedItems.map(renderMovieCard).join('');
+            
+            if (moviesToDisplay.length === 0) {
+                noResultsSection.style.display = 'block';
+                paginationContainer.innerHTML = '';
+                document.getElementById('request-title').value = searchInput.value;
+            } else {
+                noResultsSection.style.display = 'none';
+                const totalPages = Math.ceil(moviesToDisplay.length / itemsPerPage);
+                createPaginationControls(totalPages, page);
+            }
+        };
+
+        const createPaginationControls = (totalPages, currentPage) => {
+            const paginationContainer = document.getElementById('pagination-container');
+            if (totalPages <= 1) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+            let buttons = '';
+            const maxButtons = 5;
+            buttons += `<a href="?page=${currentPage - 1}" class="page-link ${currentPage === 1 ? 'pointer-events-none opacity-50' : ''} px-3 py-2 bg-gray-700 rounded-md hover:bg-cyan-500">Prev</a>`;
+            let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+            let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+            if (endPage - startPage + 1 < maxButtons) {
+                startPage = Math.max(1, endPage - maxButtons + 1);
+            }
+            if (startPage > 1) {
+                buttons += `<a href="?page=1" class="page-link px-3 py-2 bg-gray-700 rounded-md hover:bg-cyan-500">1</a>`;
+                if (startPage > 2) buttons += `<span class="px-3 py-2 text-gray-400">...</span>`;
+            }
+            for (let i = startPage; i <= endPage; i++) {
+                buttons += `<a href="?page=${i}" class="page-link ${i === currentPage ? 'bg-blue-600 text-white' : 'bg-gray-700'} px-3 py-2 rounded-md hover:bg-cyan-500">${i}</a>`;
+            }
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) buttons += `<span class="px-3 py-2 text-gray-400">...</span>`;
+                buttons += `<a href="?page=${totalPages}" class="page-link px-3 py-2 bg-gray-700 rounded-md hover:bg-cyan-500">${totalPages}</a>`;
+            }
+            buttons += `<a href="?page=${currentPage + 1}" class="page-link ${currentPage === totalPages ? 'pointer-events-none opacity-50' : ''} px-3 py-2 bg-gray-700 rounded-md hover:bg-cyan-500">Next</a>`;
+            paginationContainer.innerHTML = buttons;
+        };
+
+        const filterAndDisplay = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentPage = parseInt(urlParams.get('page')) || 1;
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedGenre = document.getElementById('genre-filter').value;
+            const selectedYear = document.getElementById('year-filter').value;
+            const selectedCategory = document.getElementById('category-filter').value;
+            
+            const filtered = allMovies.filter(movie => 
+                ((movie.genres || []).includes(selectedGenre) || !selectedGenre) && 
+                movie.title.toLowerCase().includes(searchTerm) && 
+                (!selectedYear || movie.year == selectedYear) && 
+                (!selectedCategory || movie.category === selectedCategory)
+            );
+            displayMovies(filtered, currentPage);
+        };
         
         if (allMovies.length > 0) {
             populateFilters(allMovies);
             if (initialSearchTerm) {
                 searchInput.value = initialSearchTerm;
             }
-            filterAndDisplay(allMovies);
+            filterAndDisplay();
         } else {
             displayMovies([]);
         }
         
         ['search-input', 'genre-filter', 'year-filter', 'category-filter'].forEach(id => {
             const el = document.getElementById(id);
-            if(el) el.addEventListener('input', () => filterAndDisplay(allMovies));
+            if(el) el.addEventListener('input', () => {
+                const url = new URL(window.location);
+                url.searchParams.set('page', '1'); // Reset to page 1 on filter change
+                history.pushState({}, '', url);
+                filterAndDisplay();
+            });
         });
 
-        paginationContainer.addEventListener('click', (e) => {
+        document.getElementById('pagination-container').addEventListener('click', (e) => {
             if (e.target.tagName === 'A' && e.target.classList.contains('page-link')) {
                 e.preventDefault();
                 const url = new URL(e.target.href);
@@ -181,8 +177,8 @@ const renderHomepage = async (initialSearchTerm = '') => {
                 const currentUrl = new URL(window.location);
                 currentUrl.searchParams.set('page', page);
                 history.pushState({}, '', currentUrl);
-                filterAndDisplay(allMovies);
-                window.scrollTo(0, 0); // Scroll to top on page change
+                filterAndDisplay();
+                window.scrollTo(0, 0);
             }
         });
 
