@@ -30,17 +30,17 @@ document.addEventListener('DOMContentLoaded', () => {
         episodesContainer: document.getElementById('episodes-container'),
         requestsList: document.getElementById('requests-list'),
         requestsLoadingSpinner: document.getElementById('requests-loading-spinner'),
-        adForm: document.getElementById('ad-form'),
-        adsList: document.getElementById('ads-list'),
-        adsLoadingSpinner: document.getElementById('ads-loading-spinner'),
-        adIdInput: document.getElementById('ad-id'),
-        adImageUrlInput: document.getElementById('ad-image-url'),
-        adImagePreview: document.getElementById('ad-image-preview'),
-        adCancelBtn: document.getElementById('ad-cancel-btn'),
+        promoForm: document.getElementById('promo-form'),
+        promosList: document.getElementById('promos-list'),
+        promosLoadingSpinner: document.getElementById('promos-loading-spinner'),
+        promoIdInput: document.getElementById('promo-id'),
+        promoImageUrlInput: document.getElementById('promo-image-url'),
+        promoImagePreview: document.getElementById('promo-image-preview'),
+        promoCancelBtn: document.getElementById('promo-cancel-btn'),
     };
 
     let editMode = false;
-    let adEditMode = false;
+    let promoEditMode = false;
 
     const showToast = (message, isError = false) => {
         const toast = document.getElementById('toast');
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (target.matches('#add-episode-btn')) addEpisodeField();
         else if (target.matches('.add-link-to-group-btn')) addLinkFieldToGroup(target.previousElementSibling);
         else if (target.matches('.add-quality-group-to-episode-btn')) addQualityGroupField(target.previousElementSibling);
-        else if (target.matches('.remove-btn')) target.closest('.quality-group, .episode-field, .screenshot-field, .flex, .ad-row').remove();
+        else if (target.matches('.remove-btn')) target.closest('.quality-group, .episode-field, .screenshot-field, .flex, .promo-row').remove();
     });
 
     document.body.addEventListener('change', (e) => {
@@ -280,69 +280,69 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { elements.loadingSpinner.innerHTML = ''; elements.moviesTable.classList.remove('hidden'); }
     };
     
-    const resetAdForm = () => {
-        elements.adForm.reset();
-        if (elements.adIdInput) elements.adIdInput.value = '';
-        elements.adImagePreview.src = '';
-        elements.adImagePreview.classList.add('hidden');
-        elements.adForm.querySelector('button[type="submit"]').textContent = 'Add Ad';
-        if (elements.adCancelBtn) elements.adCancelBtn.classList.add('hidden');
-        adEditMode = false;
+    const resetPromoForm = () => {
+        elements.promoForm.reset();
+        elements.promoIdInput.value = '';
+        elements.promoImagePreview.src = '';
+        elements.promoImagePreview.classList.add('hidden');
+        elements.promoForm.querySelector('button[type="submit"]').textContent = 'Save Promo';
+        if (elements.promoCancelBtn) elements.promoCancelBtn.classList.add('hidden');
+        promoEditMode = false;
     };
 
-    const renderAds = async () => {
-        elements.adsLoadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
-        elements.adsList.innerHTML = '';
+    const renderPromos = async () => {
+        elements.promosLoadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
+        elements.promosList.innerHTML = '';
         try {
-            const ads = await getAds();
-            if (ads.length === 0) {
-                elements.adsList.innerHTML = `<p class="text-gray-500 text-center">No ads created yet.</p>`;
+            const promos = await getAds();
+            if (promos.length === 0) {
+                elements.promosList.innerHTML = `<p class="text-gray-500 text-center">No promos created yet.</p>`;
             } else {
-                elements.adsList.innerHTML = ads.map(ad => `
-                    <div class="ad-row flex items-center justify-between gap-4">
-                        <img src="${ad.imageUrl}" class="h-12 w-24 object-contain rounded bg-gray-700">
-                        <div class="flex-1"><p class="text-sm text-white">${ad.location}</p><p class="text-xs text-gray-400 truncate">${ad.targetUrl}</p></div>
-                        <div><button data-id="${ad.id}" class="ad-delete-btn bg-red-600 hover:bg-red-700 text-white text-sm py-1 px-2 rounded">Delete</button></div>
+                elements.promosList.innerHTML = promos.map(promo => `
+                    <div class="promo-row flex items-center justify-between gap-4">
+                        <img src="${promo.imageUrl}" class="h-12 w-24 object-contain rounded bg-gray-700">
+                        <div class="flex-1"><p class="text-sm text-white">${promo.location}</p><p class="text-xs text-gray-400 truncate">${promo.targetUrl}</p></div>
+                        <div><button data-id="${promo.id}" class="promo-delete-btn bg-red-600 hover:bg-red-700 text-white text-sm py-1 px-2 rounded">Delete</button></div>
                     </div>
                 `).join('');
             }
         } catch (error) {
-            elements.adsList.innerHTML = `<p class="text-red-500 text-center">Failed to load ads.</p>`;
+            elements.promosList.innerHTML = `<p class="text-red-500 text-center">Failed to load promos.</p>`;
         } finally {
-            elements.adsLoadingSpinner.innerHTML = '';
+            elements.promosLoadingSpinner.innerHTML = '';
         }
     };
     
-    if(elements.adForm) {
-        elements.adForm.addEventListener('submit', async (e) => {
+    if(elements.promoForm) {
+        elements.promoForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const adData = {
-                imageUrl: elements.adImageUrlInput.value,
-                targetUrl: document.getElementById('ad-target-url').value,
-                location: document.getElementById('ad-location').value,
+            const promoData = {
+                imageUrl: elements.promoImageUrlInput.value,
+                targetUrl: document.getElementById('promo-target-url').value,
+                location: document.getElementById('promo-location').value,
             };
-            if (!adData.imageUrl || !adData.targetUrl) return showToast('Ad Image and Target URL are required.', true);
+            if (!promoData.imageUrl || !promoData.targetUrl) return showToast('Promo Image and Target URL are required.', true);
             
             try {
-                await addAd(adData);
-                showToast('Ad added successfully!');
-                resetAdForm();
-                renderAds();
+                await addAd(promoData);
+                showToast('Promo added successfully!');
+                resetPromoForm();
+                renderPromos();
             } catch (error) {
-                showToast(`Error adding ad: ${error.message}`, true);
+                showToast(`Error adding promo: ${error.message}`, true);
             }
         });
     }
 
-    if(elements.adsList) {
-        elements.adsList.addEventListener('click', async (e) => {
-            if (e.target.classList.contains('ad-delete-btn')) {
-                if (confirm('Are you sure you want to delete this ad?')) {
+    if(elements.promosList) {
+        elements.promosList.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('promo-delete-btn')) {
+                if (confirm('Are you sure you want to delete this promo?')) {
                     try {
                         await deleteAd(e.target.dataset.id);
-                        showToast('Ad deleted!');
-                        renderAds();
-                    } catch (error) { showToast(`Error deleting ad: ${error.message}`, true); }
+                        showToast('Promo deleted!');
+                        renderPromos();
+                    } catch (error) { showToast(`Error deleting promo: ${error.message}`, true); }
                 }
             }
         });
@@ -388,5 +388,5 @@ document.addEventListener('DOMContentLoaded', () => {
     resetForm();
     renderMoviesTable();
     renderMovieRequests();
-    renderAds();
+    renderPromos();
 });
