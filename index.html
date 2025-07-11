@@ -8,8 +8,8 @@
     <link rel="icon" href="https://img.icons8.com/plasticine/100/film-reel.png" type="image/png">
     
     <style>
-        .ad-container { max-width: 100%; overflow: hidden; display: flex; justify-content: center; align-items: center; margin: 1.5rem auto; }
-        .ad-container img { max-width: 100%; height: auto; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .promo-container { max-width: 100%; overflow: hidden; display: flex; justify-content: center; align-items: center; margin: 1.5rem auto; }
+        .promo-container img { max-width: 100%; height: auto; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
         #filters input, #filters select { padding: 0.75rem; border-radius: 0.5rem; color: #ffffff; background-color: #374151; border: 1px solid #4B5563; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; }
         #filters input { background-image: none; }
         #filters input:focus, #filters select:focus { outline: none; border-color: #06b6d4; box-shadow: 0 0 0 2px #06b6d4; }
@@ -21,7 +21,7 @@
 
     <main class="container mx-auto px-4 py-6">
         
-        <div id="ad-top-banner" class="ad-container"></div>
+        <div id="promo-top-banner" class="promo-container"></div>
 
         <section id="filters" class="mb-8 p-4 bg-gray-800 rounded-lg space-y-4">
             <div><input type="search" id="search-input" placeholder="Search by title..." class="w-full"></div>
@@ -50,14 +50,14 @@
                     </form>
                     <div id="request-message" class="mt-4 text-green-400"></div>
                 </div>
-
             </div>
-            <aside id="ad-sidebar" class="w-full md:w-48 flex-shrink-0">
-                <div id="ad-sidebar-content" class="sticky top-24 text-center"></div>
+            
+            <aside id="promo-sidebar" class="w-full md:w-48 flex-shrink-0">
+                <div id="promo-sidebar-content" class="sticky top-24 text-center"></div>
             </aside>
         </div>
         
-        <div id="ad-bottom" class="ad-container"></div>
+        <div id="promo-bottom" class="promo-container"></div>
 
     </main>
 
