@@ -31,4 +31,5 @@ export const getAds = async () => {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 export const addAd = async (adData) => await addDoc(adsCollection, adData);
+export const updateAd = async (id, adData) => await updateDoc(doc(db, 'ads', id), adData); // NEW
 export const deleteAd = async (id) => await deleteDoc(doc(db, 'ads', id));
