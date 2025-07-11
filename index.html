@@ -9,6 +9,7 @@
     
     <style>
         .ad-container { max-width: 100%; overflow: hidden; display: flex; justify-content: center; align-items: center; margin: 1.5rem auto; }
+        .ad-container img { max-width: 100%; height: auto; }
         #filters input, #filters select { padding: 0.75rem; border-radius: 0.5rem; color: #ffffff; background-color: #374151; border: 1px solid #4B5563; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; }
         #filters input { background-image: none; }
         #filters input:focus, #filters select:focus { outline: none; border-color: #06b6d4; box-shadow: 0 0 0 2px #06b6d4; }
@@ -20,7 +21,6 @@
 
     <main class="container mx-auto px-4 py-6">
         
-        <!-- Top Banner Ad (New system) -->
         <div id="ad-top-banner" class="ad-container"></div>
 
         <section id="filters" class="mb-8 p-4 bg-gray-800 rounded-lg space-y-4">
@@ -40,33 +40,23 @@
                     <a href="https://t.me/your_request_channel" target="_blank" class="mb-6 inline-block w-full max-w-sm bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-4 rounded-lg transition-colors text-lg">Request on Telegram</a>
                     <div class="flex items-center justify-center my-4"><span class="h-px flex-1 bg-gray-700"></span><span class="px-4 text-xs font-bold text-gray-500">OR</span><span class="h-px flex-1 bg-gray-700"></span></div>
                     <form id="request-form" class="max-w-sm mx-auto text-left">
-                        <div class="mb-4">
-                            <label for="request-title" class="block text-sm font-medium text-gray-300 mb-1">Movie Title</label>
-                            <input type="text" id="request-title" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500" required>
-                            <p class="text-xs text-gray-500 mt-1">Note: Please include the year for better accuracy (e.g., "The Matrix 1999").</p>
-                        </div>
+                        <div class="mb-4"><label for="request-title" class="block text-sm font-medium text-gray-300 mb-1">Movie Title</label><input type="text" id="request-title" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600" required><p class="text-xs text-gray-500 mt-1">Note: Please include the year for better accuracy (e.g., "The Matrix 1999").</p></div>
                         <div id="user-details-section" class="hidden space-y-4 mb-4">
                             <p class="text-sm text-yellow-400">Please enter your name once. We'll remember you for next time.</p>
-                             <div>
-                                <label for="request-name" class="block text-sm font-medium text-gray-300 mb-1">Your Name</label>
-                                <input type="text" id="request-name" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500">
-                            </div>
+                             <div><label for="request-name" class="block text-sm font-medium text-gray-300 mb-1">Your Name</label><input type="text" id="request-name" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600"></div>
                         </div>
-                        <div class="mb-4"><label for="request-notes" class="block text-sm font-medium text-gray-300 mb-1">Additional Notes (Optional)</label><input type="text" id="request-notes" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500"></div>
+                        <div class="mb-4"><label for="request-notes" class="block text-sm font-medium text-gray-300 mb-1">Additional Notes (Optional)</label><input type="text" id="request-notes" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600"></div>
                         <button type="submit" id="request-submit-btn" class="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-lg transition">Submit Request</button>
                     </form>
                     <div id="request-message" class="mt-4 text-green-400"></div>
                 </div>
 
             </div>
-            
-            <!-- Sidebar Ad (New system) -->
             <aside id="ad-sidebar" class="w-full md:w-48 flex-shrink-0">
                 <div id="ad-sidebar-content" class="sticky top-24 text-center"></div>
             </aside>
         </div>
         
-        <!-- Bottom Ad (New System) -->
         <div id="ad-bottom" class="ad-container"></div>
 
     </main>
