@@ -7,12 +7,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" href="https://img.icons8.com/plasticine/100/film-reel.png" type="image/png">
     <style>
-        .ad-container { max-width: 100%; overflow: hidden; display: flex; justify-content: center; align-items: center; margin: 1.5rem auto; background-color: rgba(0,0,0,0.2); border-radius: 0.5rem;}
+        .ad-container { max-width: 100%; overflow: hidden; display: flex; justify-content: center; align-items: center; margin: 1.5rem auto; }
+        .ad-container img { max-width: 100%; height: auto; }
         .downloads-accordion summary { cursor: pointer; outline: none; }
         .downloads-accordion summary::marker { color: #06b6d4; }
         .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; background: #000; }
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         #telegram-popup.show > div { transform: scale(1); opacity: 1; }
+        #movie-page-search-bar { transition: top 0.3s ease-in-out; }
     </style>
 </head>
 <body class="bg-gray-900 text-white font-sans">
@@ -24,7 +26,6 @@
         <div id="loading-spinner" class="text-center py-20"><div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-500 mx-auto"></div><p class="mt-4">Loading Details...</p></div>
 
         <div id="movie-content" class="hidden">
-            <!-- AD: Movie Top -->
             <div id="ad-movie-top" class="ad-container"></div>
 
             <section class="flex flex-col md:flex-row md:gap-8">
@@ -39,40 +40,20 @@
                 </div>
             </section>
             
-            
             <section class="mb-8"><h2 class="text-2xl font-bold mb-4 border-l-4 border-cyan-400 pl-4">Watch Trailer</h2><div id="trailer-container" class="video-container rounded-lg overflow-hidden"></div></section>
-            
             <section class="mb-8"><h2 class="text-2xl font-bold mb-4 border-l-4 border-cyan-400 pl-4">Screenshots</h2><div id="screenshots-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div></section>
             
-            <!-- AD: Movie Bottom -->
             <div id="ad-movie-bottom" class="ad-container"></div>
 
             <section><h2 class="text-2xl font-bold mb-4 border-l-4 border-cyan-400 pl-4">Download Links</h2><div id="downloads-container" class="space-y-3 downloads-accordion"></div></section>
             
-            <section class="mt-12 text-center bg-gray-800 p-6 rounded-lg">
-                <h2 class="text-xl font-bold mb-4">How to Download Movies?</h2>
-                <a href="https://t.me/your_how_to_download_post_link" target="_blank" class="inline-block bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">
-                    Click Here to Watch Tutorial
-                </a>
-            </section>
-            
-            <section class="mt-8 text-center bg-sky-800/30 p-8 rounded-lg border-2 border-sky-500/50">
-                <h2 class="text-2xl font-bold mb-4">Join Our Telegram Channel!</h2>
-                <p class="text-gray-300 mb-6 max-w-lg mx-auto">Get all the latest movies and series updates directly on your phone. Never miss a new release!</p>
-                <a href="https://t.me/your_channel_name" target="_blank" class="inline-block bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors text-lg">
-                    Join Now
-                </a>
-            </section>
-
-            <section id="recommendations-section" class="mt-12 pt-8 border-t border-gray-700 hidden">
-                <h2 class="text-2xl font-bold mb-6 border-l-4 border-cyan-400 pl-4">You Might Also Like</h2>
-                <div id="recommendations-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6"></div>
-            </section>
+            <section class="mt-12 text-center bg-gray-800 p-6 rounded-lg"><h2 class="text-xl font-bold mb-4">How to Download Movies?</h2><a href="https://t.me/your_how_to_download_post_link" target="_blank" class="inline-block bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">Click Here to Watch Tutorial</a></section>
+            <section class="mt-8 text-center bg-sky-800/30 p-8 rounded-lg border-2 border-sky-500/50"><h2 class="text-2xl font-bold mb-4">Join Our Telegram Channel!</h2><p class="text-gray-300 mb-6 max-w-lg mx-auto">Get all the latest movies and series updates directly on your phone. Never miss a new release!</p><a href="https://t.me/your_channel_name" target="_blank" class="inline-block bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors text-lg">Join Now</a></section>
+            <section id="recommendations-section" class="mt-12 pt-8 border-t border-gray-700 hidden"><h2 class="text-2xl font-bold mb-6 border-l-4 border-cyan-400 pl-4">You Might Also Like</h2><div id="recommendations-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6"></div></section>
         </div>
         
         <div id="error-message" class="text-center text-red-500 py-20 hidden"><h2 class="text-3xl">Content not found!</h2><p class="mt-4">The requested content could not be found.</p><a href="index.html" class="mt-6 inline-block bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded">Go to Homepage</a></div>
     </main>
-
     <div id="footer-placeholder"></div>
     <div id="telegram-popup" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
         <div class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 sm:p-8 text-center border-2 border-cyan-500/50 transform transition-all scale-95 opacity-0">
