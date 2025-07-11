@@ -47,13 +47,14 @@ const renderAds = async () => {
     try {
         const ads = await getAds();
         ads.forEach(ad => {
-            const adContainer = document.getElementById(`ad-${ad.location}`) || (ad.location === 'sidebar' ? document.getElementById('ad-sidebar-content') : null);
+            // UPDATED: Look for "promo-" prefixes instead of "ad-"
+            const adContainer = document.getElementById(`promo-${ad.location}`) || (ad.location === 'sidebar' ? document.getElementById('promo-sidebar-content') : null);
             if (adContainer) {
                 adContainer.innerHTML = `<a href="${ad.targetUrl}" target="_blank" rel="noopener sponsored"><img src="${ad.imageUrl}" alt="Advertisement" class="rounded-lg shadow-md"></a>`;
             }
         });
     } catch (error) {
-        console.error("Failed to load ads:", error);
+        console.error("Failed to load promos:", error);
     }
 };
 
