@@ -226,8 +226,8 @@ document.addEventListener('DOMContentLoaded', () => {
             else dropZone.classList.remove('drag-over');
             if (eventName === 'drop') {
                 const file = e.dataTransfer.files[0];
-                const urlInput = dropZone.querySelector('.poster-url-input, .screenshot-url-input');
-                const previewEl = dropZone.querySelector('#poster-preview, .screenshot-preview');
+                const urlInput = dropZone.querySelector('.poster-url-input');
+                const previewEl = dropZone.querySelector('img');
                 const statusEl = dropZone.querySelector('.upload-status');
                 if (file && urlInput && previewEl && statusEl) handleImageUpload(file, urlInput, previewEl, statusEl);
             }
@@ -275,18 +275,18 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.moviesTable.classList.add('hidden');
         try {
             const movies = (await getMovies()).sort((a,b) => a.title.localeCompare(b.title));
-            elements.moviesList.innerHTML = movies.map(movie => `<tr class="border-b border-gray-700 hover:bg-gray-900"><td class="p-3"><img src="${movie.posterUrl}" alt="${movie.title}" class="h-16 w-auto rounded object-cover"></td><td class="p-3 font-semibold">${movie.title}</td><td class="p-3">${movie.year}</td><td class="p-3"><span class="text-xs font-bold ${movie.type === 'Web Series' ? 'text-green-400' : 'text-cyan-400'}">${movie.type || 'Movie'}</span></td><td class="p-3"><button data-id="${movie.id}" class="edit-btn bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-2 rounded mr-2">Edit</button><button data-id="${movie.id}" class="delete-btn bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-2 rounded">Delete</button></td></tr>`).join('');
+            elements.moviesList.innerHTML = movies.map(movie => `<tr class="border-b border-gray-700 hover:bg-gray-900"><td class="p-3"><img src="${movie.posterUrl}" alt="${movie.title}" class="h-16 w-auto rounded object-cover"></td><td class="p-3 font-semibold">${movie.title}</td><td class="p-3">${movie.year}</td><td class="p-3"><span class="text-xs font-bold ${movie.type === 'Web Series' ? 'text-green-400' : 'text-cyan-400'}">${movie.type || 'Movie'}</span></td><td class="p-3"><button data-id="${movie.id}" class="edit-btn bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-2 rounded mr-2">Edit</button><button data-id="${movie.id}" class="delete-btn bg-red-600 hover:bg-red-600 text-white text-sm py-1 px-2 rounded">Delete</button></td></tr>`).join('');
         } catch (error) { elements.moviesList.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">Failed to load content.</td></tr>`;} 
         finally { elements.loadingSpinner.innerHTML = ''; elements.moviesTable.classList.remove('hidden'); }
     };
-
+    
     const resetAdForm = () => {
         elements.adForm.reset();
-        elements.adIdInput.value = '';
+        if (elements.adIdInput) elements.adIdInput.value = '';
         elements.adImagePreview.src = '';
         elements.adImagePreview.classList.add('hidden');
-        elements.adForm.querySelector('button[type="submit"]').textContent = 'Save Ad';
-        elements.adCancelBtn.classList.add('hidden');
+        elements.adForm.querySelector('button[type="submit"]').textContent = 'Add Ad';
+        if (elements.adCancelBtn) elements.adCancelBtn.classList.add('hidden');
         adEditMode = false;
     };
 
@@ -313,36 +313,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    elements.adForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const adData = {
-            imageUrl: elements.adImageUrlInput.value,
-            targetUrl: document.getElementById('ad-target-url').value,
-            location: document.getElementById('ad-location').value,
-        };
-        if (!adData.imageUrl || !adData.targetUrl) return showToast('Ad Image and Target URL are required.', true);
-        
-        try {
-            await addAd(adData);
-            showToast('Ad added successfully!');
-            resetAdForm();
-            renderAds();
-        } catch (error) {
-            showToast(`Error adding ad: ${error.message}`, true);
-        }
-    });
-
-    elements.adsList.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('ad-delete-btn')) {
-            if (confirm('Are you sure you want to delete this ad?')) {
-                try {
-                    await deleteAd(e.target.dataset.id);
-                    showToast('Ad deleted!');
-                    renderAds();
-                } catch (error) { showToast(`Error deleting ad: ${error.message}`, true); }
+    if(elements.adForm) {
+        elements.adForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const adData = {
+                imageUrl: elements.adImageUrlInput.value,
+                targetUrl: document.getElementById('ad-target-url').value,
+                location: document.getElementById('ad-location').value,
+            };
+            if (!adData.imageUrl || !adData.targetUrl) return showToast('Ad Image and Target URL are required.', true);
+            
+            try {
+                await addAd(adData);
+                showToast('Ad added successfully!');
+                resetAdForm();
+                renderAds();
+            } catch (error) {
+                showToast(`Error adding ad: ${error.message}`, true);
             }
-        }
-    });
+        });
+    }
+
+    if(elements.adsList) {
+        elements.adsList.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('ad-delete-btn')) {
+                if (confirm('Are you sure you want to delete this ad?')) {
+                    try {
+                        await deleteAd(e.target.dataset.id);
+                        showToast('Ad deleted!');
+                        renderAds();
+                    } catch (error) { showToast(`Error deleting ad: ${error.message}`, true); }
+                }
+            }
+        });
+    }
     
     const renderMovieRequests = async () => {
         elements.requestsLoadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
@@ -361,22 +365,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    elements.requestsList.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('mark-done-btn')) {
-            const requestId = e.target.dataset.id;
-            e.target.disabled = true;
-            e.target.textContent = '...';
-            try {
-                await deleteMovieRequest(requestId);
-                showToast('Request marked as done!');
-                renderMovieRequests();
-            } catch (err) {
-                showToast('Failed to remove request.', true);
-                e.target.disabled = false;
-                e.target.textContent = 'Done';
+    if(elements.requestsList) {
+        elements.requestsList.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('mark-done-btn')) {
+                const requestId = e.target.dataset.id;
+                e.target.disabled = true;
+                e.target.textContent = '...';
+                try {
+                    await deleteMovieRequest(requestId);
+                    showToast('Request marked as done!');
+                    renderMovieRequests();
+                } catch (err) {
+                    showToast('Failed to remove request.', true);
+                    e.target.disabled = false;
+                    e.target.textContent = 'Done';
+                }
             }
-        }
-    });
+        });
+    }
 
     elements.genresContainer.innerHTML = ALL_GENRES.map(genre => `<div><input type="checkbox" id="genre-${genre.toLowerCase()}" value="${genre}" class="genre-checkbox"><label for="genre-${genre.toLowerCase()}" class="genre-checkbox-label">${genre}</label></div>`).join('');
     resetForm();
