@@ -60,6 +60,7 @@
         <section class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
             <h2 class="text-2xl font-bold mb-4">Ad Management</h2>
             <form id="ad-form" class="mb-8">
+                <!-- THIS IS THE CRITICAL FIX -->
                 <input type="hidden" id="ad-id">
                 <div class="mb-4 upload-field"><label class="block text-gray-200 mb-2 font-semibold">Ad Image</label><div class="flex items-center gap-4"><label class="poster-upload-btn cursor-pointer inline-block bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded">Choose & Upload</label><input type="file" class="poster-upload-input hidden" accept="image/*"><span class="upload-status text-sm text-gray-400"></span></div><div><label for="ad-image-url" class="block text-gray-300 mb-1 text-sm mt-3">Or paste URL</label><input type="url" id="ad-image-url" class="form-input w-full poster-url-input"></div><div class="mt-4 text-center"><img id="ad-image-preview" src="" alt="Ad Preview" class="hidden max-w-xs mx-auto rounded-lg"></div></div>
                 <div class="mb-4"><label for="ad-target-url" class="block text-gray-300 mb-1">Target URL</label><input type="url" id="ad-target-url" class="form-input w-full"></div>
