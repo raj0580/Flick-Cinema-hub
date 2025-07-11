@@ -1,4 +1,4 @@
-import { getMovies, getMovieById, addMovieRequest } from './db.js';
+import { getMovies, getMovieById, addMovieRequest, getAds } from './db.js';
 
 const initializePopup = () => {
     let countdownInterval;
@@ -39,35 +39,26 @@ const initializePopup = () => {
 };
 
 const renderMovieCard = (movie) => {
-    // --- THIS IS THE NEW, PERMANENT FIX ---
-    // The tags are now created inside a container that forces them to wrap correctly.
-    // The "SERIES" tag will naturally flow below the quality tag if there isn't enough space.
-    let tagsHtml = `
-        <div class="absolute top-2 right-2 flex flex-wrap justify-end gap-2">
-            ${movie.type === 'Web Series' ? `<span class="bg-green-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">SERIES</span>` : ''}
-            ${movie.quality ? `<span class="bg-cyan-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">${movie.quality}</span>` : ''}
-        </div>
-    `;
-
-    return `
-        <a href="movie.html?id=${movie.id}" class="group block bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-cyan-500/50 transition-shadow duration-300">
-            <div class="relative">
-                <img src="${movie.posterUrl}" alt="${movie.title}" class="w-full h-auto aspect-[2/3] object-cover transform group-hover:scale-105 transition-transform duration-300">
-                ${tagsHtml}
-            </div>
-            <div class="p-3">
-                <h3 class="text-md font-bold truncate group-hover:text-cyan-400">${movie.title}</h3>
-                <div class="text-xs text-gray-400 mt-1">
-                    <span>${movie.year}</span> •
-                    <span class="truncate">${(movie.genres || []).join(', ')}</span>
-                </div>
-            </div>
-        </a>
-    `;
+    const tagsHtml = `<div class="absolute top-2 right-2 flex flex-wrap justify-end gap-2">${movie.type === 'Web Series' ? `<span class="bg-green-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">SERIES</span>` : ''}${movie.quality ? `<span class="bg-cyan-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">${movie.quality}</span>` : ''}</div>`;
+    return `<a href="movie.html?id=${movie.id}" class="group block bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-cyan-500/50 transition-shadow duration-300"><div class="relative"><img src="${movie.posterUrl}" alt="${movie.title}" class="w-full h-auto aspect-[2/3] object-cover transform group-hover:scale-105 transition-transform duration-300">${tagsHtml}</div><div class="p-3"><h3 class="text-md font-bold truncate group-hover:text-cyan-400">${movie.title}</h3><div class="text-xs text-gray-400 mt-1"><span>${movie.year}</span> •<span class="truncate">${(movie.genres || []).join(', ')}</span></div></div></a>`;
 };
 
+const renderAds = async () => {
+    try {
+        const ads = await getAds();
+        ads.forEach(ad => {
+            const adContainer = document.getElementById(`ad-${ad.location}`) || (ad.location === 'sidebar' ? document.getElementById('ad-sidebar-content') : null);
+            if (adContainer) {
+                adContainer.innerHTML = `<a href="${ad.targetUrl}" target="_blank" rel="noopener sponsored"><img src="${ad.imageUrl}" alt="Advertisement" class="rounded-lg shadow-md"></a>`;
+            }
+        });
+    } catch (error) {
+        console.error("Failed to load ads:", error);
+    }
+};
 
 const renderHomepage = async (initialSearchTerm = '') => {
+    renderAds();
     const movieGrid = document.getElementById('movie-grid');
     const loadingSpinner = document.getElementById('loading-spinner');
     const noResultsSection = document.getElementById('no-results-section');
@@ -235,12 +226,15 @@ const initializeMoviePageSearch = () => {
 };
 
 const renderMovieDetailPage = async () => {
+    renderAds();
     const params = new URLSearchParams(window.location.search);
     const movieId = params.get('id');
     if (!movieId) return window.location.href = 'index.html';
+
     const loadingSpinner = document.getElementById('loading-spinner');
     const movieContent = document.getElementById('movie-content');
     const errorMessage = document.getElementById('error-message');
+
     try {
         const movie = await getMovieById(movieId);
         loadingSpinner.style.display = 'none';
