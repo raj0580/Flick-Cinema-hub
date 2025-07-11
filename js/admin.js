@@ -1,4 +1,4 @@
-import { getMovies, addMovie, updateMovie, deleteMovie, getMovieById, getMovieRequests, deleteMovieRequest, getAds, addAd, deleteAd } from './db.js';
+import { getMovies, addMovie, updateMovie, deleteMovie, getMovieById, getMovieRequests, deleteMovieRequest, getAds, addAd, deleteAd, updateAd } from './db.js';
 
 const IMGBB_API_KEY = '5090ec8c335078581b53f917f9657083';
 const ALL_GENRES = ['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Family', 'Fantasy', 'History', 'Horror', 'Music', 'Mystery', 'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western'];
@@ -226,8 +226,8 @@ document.addEventListener('DOMContentLoaded', () => {
             else dropZone.classList.remove('drag-over');
             if (eventName === 'drop') {
                 const file = e.dataTransfer.files[0];
-                const urlInput = dropZone.querySelector('.poster-url-input');
-                const previewEl = dropZone.querySelector('img');
+                const urlInput = dropZone.querySelector('.poster-url-input, .screenshot-url-input');
+                const previewEl = dropZone.querySelector('#poster-preview, .screenshot-preview');
                 const statusEl = dropZone.querySelector('.upload-status');
                 if (file && urlInput && previewEl && statusEl) handleImageUpload(file, urlInput, previewEl, statusEl);
             }
@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.moviesTable.classList.add('hidden');
         try {
             const movies = (await getMovies()).sort((a,b) => a.title.localeCompare(b.title));
-            elements.moviesList.innerHTML = movies.map(movie => `<tr class="border-b border-gray-700 hover:bg-gray-900"><td class="p-3"><img src="${movie.posterUrl}" alt="${movie.title}" class="h-16 w-auto rounded object-cover"></td><td class="p-3 font-semibold">${movie.title}</td><td class="p-3">${movie.year}</td><td class="p-3"><span class="text-xs font-bold ${movie.type === 'Web Series' ? 'text-green-400' : 'text-cyan-400'}">${movie.type || 'Movie'}</span></td><td class="p-3"><button data-id="${movie.id}" class="edit-btn bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-2 rounded mr-2">Edit</button><button data-id="${movie.id}" class="delete-btn bg-red-600 hover:bg-red-600 text-white text-sm py-1 px-2 rounded">Delete</button></td></tr>`).join('');
+            elements.moviesList.innerHTML = movies.map(movie => `<tr class="border-b border-gray-700 hover:bg-gray-900"><td class="p-3"><img src="${movie.posterUrl}" alt="${movie.title}" class="h-16 w-auto rounded object-cover"></td><td class="p-3 font-semibold">${movie.title}</td><td class="p-3">${movie.year}</td><td class="p-3"><span class="text-xs font-bold ${movie.type === 'Web Series' ? 'text-green-400' : 'text-cyan-400'}">${movie.type || 'Movie'}</span></td><td class="p-3"><button data-id="${movie.id}" class="edit-btn bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-2 rounded mr-2">Edit</button><button data-id="${movie.id}" class="delete-btn bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-2 rounded">Delete</button></td></tr>`).join('');
         } catch (error) { elements.moviesList.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">Failed to load content.</td></tr>`;} 
         finally { elements.loadingSpinner.innerHTML = ''; elements.moviesTable.classList.remove('hidden'); }
     };
@@ -298,13 +298,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (promos.length === 0) {
                 elements.promosList.innerHTML = `<p class="text-gray-500 text-center">No promos created yet.</p>`;
             } else {
-                elements.promosList.innerHTML = promos.map(promo => `
+                elements.promosList.innerHTML = promos.map(promo => {
+                    const isVisible = promo.visible !== false; // Default to visible if field is missing
+                    return `
                     <div class="promo-row flex items-center justify-between gap-4">
                         <img src="${promo.imageUrl}" class="h-12 w-24 object-contain rounded bg-gray-700">
-                        <div class="flex-1"><p class="text-sm text-white">${promo.location}</p><p class="text-xs text-gray-400 truncate">${promo.targetUrl}</p></div>
-                        <div><button data-id="${promo.id}" class="promo-delete-btn bg-red-600 hover:bg-red-700 text-white text-sm py-1 px-2 rounded">Delete</button></div>
+                        <div class="flex-1">
+                            <p class="text-sm text-white">${promo.location}</p>
+                            <p class="text-xs text-gray-400 truncate">${promo.targetUrl}</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" data-id="${promo.id}" class="sr-only peer promo-visibility-toggle" ${isVisible ? 'checked' : ''}>
+                                <div class="w-11 h-6 bg-gray-600 rounded-full peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                            </label>
+                            <button data-id="${promo.id}" class="promo-delete-btn bg-red-600 hover:bg-red-700 text-white text-sm py-1 px-2 rounded">Delete</button>
+                        </div>
                     </div>
-                `).join('');
+                `}).join('');
             }
         } catch (error) {
             elements.promosList.innerHTML = `<p class="text-red-500 text-center">Failed to load promos.</p>`;
@@ -320,6 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 imageUrl: elements.promoImageUrlInput.value,
                 targetUrl: document.getElementById('promo-target-url').value,
                 location: document.getElementById('promo-location').value,
+                visible: true // Always visible on creation
             };
             if (!promoData.imageUrl || !promoData.targetUrl) return showToast('Promo Image and Target URL are required.', true);
             
@@ -336,13 +348,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(elements.promosList) {
         elements.promosList.addEventListener('click', async (e) => {
-            if (e.target.classList.contains('promo-delete-btn')) {
+            const target = e.target;
+            // Handle delete
+            if (target.classList.contains('promo-delete-btn')) {
                 if (confirm('Are you sure you want to delete this promo?')) {
                     try {
-                        await deleteAd(e.target.dataset.id);
+                        await deleteAd(target.dataset.id);
                         showToast('Promo deleted!');
                         renderPromos();
                     } catch (error) { showToast(`Error deleting promo: ${error.message}`, true); }
+                }
+            }
+        });
+
+        elements.promosList.addEventListener('change', async (e) => {
+            const target = e.target;
+             // Handle visibility toggle
+            if (target.classList.contains('promo-visibility-toggle')) {
+                const promoId = target.dataset.id;
+                const newVisibility = target.checked;
+                try {
+                    await updateAd(promoId, { visible: newVisibility });
+                    showToast(`Promo status updated to ${newVisibility ? 'Visible' : 'Hidden'}.`);
+                } catch (error) {
+                    showToast(`Error updating status: ${error.message}`, true);
+                    target.checked = !newVisibility; // Revert checkbox on failure
                 }
             }
         });
