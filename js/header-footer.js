@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Add Telegram button to all pages
         linksHtml += `
-            <a href="https://t.me/your_channel_name" target="_blank" class="flex items-center justify-center bg-sky-500 hover:bg-sky-600 text-white font-bold p-2 rounded-lg transition-colors">
+            <a href="https://t.me/flickcinemaa/" target="_blank" class="flex items-center justify-center bg-sky-500 hover:bg-sky-600 text-white font-bold p-2 rounded-lg transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M9.78 18.65l.28-4.23l7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3L3.64 12c-.88-.25-.89-1.37.2-1.64l16.12-5.72c.78-.27 1.45.16 1.18 1.34l-2.83 13.25c-.28 1.3-1.02 1.6-2.03 1.01L12.6 16.3l-1.99 1.9c-.2.2-.4.4-.64.4z"></path>
                 </svg>
