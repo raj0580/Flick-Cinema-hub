@@ -7,6 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" href="https://img.icons8.com/plasticine/100/film-reel.png" type="image/png">
     <style>
+        .promo-container { max-width: 100%; overflow: hidden; display: flex; justify-content: center; align-items: center; margin: 1.5rem auto; position: relative;}
+        .promo-container img, .promo-slide { max-width: 100%; height: auto; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .promo-slide { display: none; }
         .downloads-accordion summary { cursor: pointer; outline: none; }
         .downloads-accordion summary::marker { color: #06b6d4; }
         #telegram-popup.show > div { transform: scale(1); opacity: 1; }
