@@ -317,10 +317,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialLoad = async () => {
         elements.loadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
         try {
-            allMovies = (await getMovies()).sort((a,b) => b.timestamp?.toDate() - a.timestamp?.toDate() || 0);
+            allMovies = (await getMovies()).sort((a,b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
             renderMoviesTable(1);
         } catch (error) { 
-            elements.loadingSpinner.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">Failed to load content.</td></tr>`;
+            elements.loadingSpinner.innerHTML = `<p class="text-red-500">Failed to load content.</p>`;
         }
     };
     
@@ -435,9 +435,44 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const renderReports = async () => {
+        elements.reportsLoadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
+        elements.reportsList.innerHTML = '';
+        try {
+            const reports = await getReports();
+            if (reports.length === 0) {
+                elements.reportsList.innerHTML = `<p class="text-gray-500 text-center">No pending link reports. Great job!</p>`;
+            } else {
+                elements.reportsList.innerHTML = reports.map(report => `<div class="bg-gray-800 p-4 rounded-lg"><div class="flex items-center justify-between gap-4"><div><p class="font-bold text-white">${report.movieTitle}</p><p class="text-sm text-yellow-400">Quality: ${report.quality}</p><p class="text-xs text-gray-400 break-all">URL: ${report.brokenUrl}</p></div><button data-id="${report.id}" class="mark-report-done-btn bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-1 px-3 rounded">Resolved</button></div></div>`).join('');
+            }
+        } catch (error) {
+            elements.reportsList.innerHTML = `<p class="text-red-500 text-center">Failed to load reports.</p>`;
+        } finally {
+            elements.reportsLoadingSpinner.innerHTML = '';
+        }
+    };
+
+    if(elements.reportsList) {
+        elements.reportsList.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('mark-report-done-btn')) {
+                const reportId = e.target.dataset.id;
+                e.target.disabled = true;
+                try {
+                    await deleteReport(reportId);
+                    showToast('Report marked as resolved!');
+                    renderReports();
+                } catch (err) {
+                    showToast('Failed to remove report.', true);
+                    e.target.disabled = false;
+                }
+            }
+        });
+    }
+
     elements.genresContainer.innerHTML = ALL_GENRES.map(genre => `<div><input type="checkbox" id="genre-${genre.toLowerCase()}" value="${genre}" class="genre-checkbox"><label for="genre-${genre.toLowerCase()}" class="genre-checkbox-label">${genre}</label></div>`).join('');
     resetForm();
     initialLoad();
     renderMovieRequests();
     renderPromos();
+    renderReports();
 });
