@@ -317,9 +317,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialLoad = async () => {
         elements.loadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
         try {
-            allMovies = (await getMovies()).sort((a,b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
+            allMovies = (await getMovies()); // Fetch without sorting
+            // Safe sorting in JavaScript
+            allMovies.sort((a,b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
             renderMoviesTable(1);
         } catch (error) { 
+            console.error("Failed to load content for admin panel:", error);
             elements.loadingSpinner.innerHTML = `<p class="text-red-500">Failed to load content.</p>`;
         }
     };
