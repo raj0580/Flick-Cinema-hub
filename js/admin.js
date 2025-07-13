@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let editMode = false;
     let promoEditMode = false;
-    let allMovies = []; // Cache for admin search/pagination
+    let allMovies = [];
 
     const showToast = (message, isError = false) => {
         const toast = document.getElementById('toast');
@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else await addMovie(movieData);
             showToast(`Content ${editMode ? 'updated' : 'added'} successfully!`);
             resetForm();
-            renderMoviesTable(1, elements.adminSearchInput.value);
+            initialLoad();
         } catch (error) { showToast(`Error saving content: ${error.message}`, true); }
     });
     
@@ -269,8 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     await deleteMovie(id);
                     showToast('Content deleted!');
-                    allMovies = allMovies.filter(m => m.id !== id);
-                    renderMoviesTable(1, elements.adminSearchInput.value);
+                    initialLoad();
                 } catch (error) { showToast(`Error: ${error.message}`, true); }
             }
         }
@@ -289,10 +288,10 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.loadingSpinner.innerHTML = '';
         elements.moviesTable.classList.remove('hidden');
 
-        renderAdminPagination(totalPages, page, searchTerm);
+        renderAdminPagination(totalPages, page);
     };
 
-    const renderAdminPagination = (totalPages, currentPage, searchTerm) => {
+    const renderAdminPagination = (totalPages, currentPage) => {
         if (totalPages <= 1) {
             elements.adminPaginationContainer.innerHTML = '';
             return;
@@ -318,12 +317,87 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialLoad = async () => {
         elements.loadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
         try {
-            allMovies = (await getMovies()).sort((a,b) => a.title.localeCompare(b.title));
+            allMovies = (await getMovies()).sort((a,b) => b.timestamp?.toDate() - a.timestamp?.toDate() || 0);
             renderMoviesTable(1);
         } catch (error) { 
             elements.loadingSpinner.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">Failed to load content.</td></tr>`;
         }
     };
+    
+    const resetPromoForm = () => {
+        elements.promoForm.reset();
+        elements.promoIdInput.value = '';
+        elements.promoImagePreview.src = '';
+        elements.promoImagePreview.classList.add('hidden');
+        elements.promoForm.querySelector('button[type="submit"]').textContent = 'Save Promo';
+        if (elements.promoCancelBtn) elements.promoCancelBtn.classList.add('hidden');
+        promoEditMode = false;
+    };
+
+    const renderPromos = async () => {
+        elements.promosLoadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
+        elements.promosList.innerHTML = '';
+        try {
+            const promos = await getAds();
+            if (promos.length === 0) {
+                elements.promosList.innerHTML = `<p class="text-gray-500 text-center">No promos created yet.</p>`;
+            } else {
+                elements.promosList.innerHTML = promos.map(promo => {
+                    const isVisible = promo.visible !== false;
+                    return `<div class="promo-row flex items-center justify-between gap-4"><img src="${promo.imageUrl}" class="h-12 w-24 object-contain rounded bg-gray-700"><div class="flex-1"><p class="text-sm text-white">${promo.location}</p><p class="text-xs text-gray-400 truncate">${promo.targetUrl}</p></div><div class="flex items-center gap-4"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" data-id="${promo.id}" class="sr-only peer promo-visibility-toggle" ${isVisible ? 'checked' : ''}><div class="w-11 h-6 bg-gray-600 rounded-full peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div></label><button data-id="${promo.id}" class="promo-delete-btn bg-red-600 hover:bg-red-700 text-white text-sm py-1 px-2 rounded">Delete</button></div></div>`}).join('');
+            }
+        } catch (error) {
+            elements.promosList.innerHTML = `<p class="text-red-500 text-center">Failed to load promos.</p>`;
+        } finally {
+            elements.promosLoadingSpinner.innerHTML = '';
+        }
+    };
+    
+    if(elements.promoForm) {
+        elements.promoForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const promoData = {
+                imageUrl: elements.promoImageUrlInput.value,
+                targetUrl: document.getElementById('promo-target-url').value,
+                location: document.getElementById('promo-location').value,
+                visible: true
+            };
+            if (!promoData.imageUrl || !promoData.targetUrl) return showToast('Promo Image and Target URL are required.', true);
+            try {
+                await addAd(promoData);
+                showToast('Promo added successfully!');
+                resetPromoForm();
+                renderPromos();
+            } catch (error) { showToast(`Error adding promo: ${error.message}`, true); }
+        });
+    }
+
+    if(elements.promosList) {
+        elements.promosList.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('promo-delete-btn')) {
+                if (confirm('Are you sure you want to delete this promo?')) {
+                    try {
+                        await deleteAd(e.target.dataset.id);
+                        showToast('Promo deleted!');
+                        renderPromos();
+                    } catch (error) { showToast(`Error deleting promo: ${error.message}`, true); }
+                }
+            }
+        });
+        elements.promosList.addEventListener('change', async (e) => {
+            if (e.target.classList.contains('promo-visibility-toggle')) {
+                const promoId = e.target.dataset.id;
+                const newVisibility = e.target.checked;
+                try {
+                    await updateAd(promoId, { visible: newVisibility });
+                    showToast(`Promo status updated to ${newVisibility ? 'Visible' : 'Hidden'}.`);
+                } catch (error) {
+                    showToast(`Error updating status: ${error.message}`, true);
+                    e.target.checked = !newVisibility;
+                }
+            }
+        });
+    }
     
     const renderMovieRequests = async () => {
         elements.requestsLoadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
@@ -365,4 +439,5 @@ document.addEventListener('DOMContentLoaded', () => {
     resetForm();
     initialLoad();
     renderMovieRequests();
+    renderPromos();
 });
