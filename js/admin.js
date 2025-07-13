@@ -1,4 +1,4 @@
-import { getMovies, addMovie, updateMovie, deleteMovie, getMovieById, getMovieRequests, deleteMovieRequest, getAds, addAd, deleteAd, updateAd } from './db.js';
+import { getMovies, addMovie, updateMovie, deleteMovie, getMovieById, getMovieRequests, deleteMovieRequest, getAds, addAd, deleteAd, updateAd, getReports, deleteReport } from './db.js';
 
 const IMGBB_API_KEY = '5090ec8c335078581b53f917f9657083';
 const ALL_GENRES = ['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Family', 'Fantasy', 'History', 'Horror', 'Music', 'Mystery', 'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western'];
@@ -37,10 +37,15 @@ document.addEventListener('DOMContentLoaded', () => {
         promoImageUrlInput: document.getElementById('promo-image-url'),
         promoImagePreview: document.getElementById('promo-image-preview'),
         promoCancelBtn: document.getElementById('promo-cancel-btn'),
+        reportsList: document.getElementById('reports-list'),
+        reportsLoadingSpinner: document.getElementById('reports-loading-spinner'),
+        adminSearchInput: document.getElementById('admin-search-input'),
+        adminPaginationContainer: document.getElementById('admin-pagination-container'),
     };
 
     let editMode = false;
     let promoEditMode = false;
+    let allMovies = []; // Cache for admin search/pagination
 
     const showToast = (message, isError = false) => {
         const toast = document.getElementById('toast');
@@ -226,8 +231,8 @@ document.addEventListener('DOMContentLoaded', () => {
             else dropZone.classList.remove('drag-over');
             if (eventName === 'drop') {
                 const file = e.dataTransfer.files[0];
-                const urlInput = dropZone.querySelector('.poster-url-input, .screenshot-url-input');
-                const previewEl = dropZone.querySelector('#poster-preview, .screenshot-preview');
+                const urlInput = dropZone.querySelector('.poster-url-input');
+                const previewEl = dropZone.querySelector('img');
                 const statusEl = dropZone.querySelector('.upload-status');
                 if (file && urlInput && previewEl && statusEl) handleImageUpload(file, urlInput, previewEl, statusEl);
             }
@@ -249,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else await addMovie(movieData);
             showToast(`Content ${editMode ? 'updated' : 'added'} successfully!`);
             resetForm();
-            renderMoviesTable();
+            renderMoviesTable(1, elements.adminSearchInput.value);
         } catch (error) { showToast(`Error saving content: ${error.message}`, true); }
     });
     
@@ -264,119 +269,61 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     await deleteMovie(id);
                     showToast('Content deleted!');
-                    renderMoviesTable();
+                    allMovies = allMovies.filter(m => m.id !== id);
+                    renderMoviesTable(1, elements.adminSearchInput.value);
                 } catch (error) { showToast(`Error: ${error.message}`, true); }
             }
         }
     });
 
-    const renderMoviesTable = async () => {
-        elements.loadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
-        elements.moviesTable.classList.add('hidden');
-        try {
-            const movies = (await getMovies()).sort((a,b) => a.title.localeCompare(b.title));
-            elements.moviesList.innerHTML = movies.map(movie => `<tr class="border-b border-gray-700 hover:bg-gray-900"><td class="p-3"><img src="${movie.posterUrl}" alt="${movie.title}" class="h-16 w-auto rounded object-cover"></td><td class="p-3 font-semibold">${movie.title}</td><td class="p-3">${movie.year}</td><td class="p-3"><span class="text-xs font-bold ${movie.type === 'Web Series' ? 'text-green-400' : 'text-cyan-400'}">${movie.type || 'Movie'}</span></td><td class="p-3"><button data-id="${movie.id}" class="edit-btn bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-2 rounded mr-2">Edit</button><button data-id="${movie.id}" class="delete-btn bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-2 rounded">Delete</button></td></tr>`).join('');
-        } catch (error) { elements.moviesList.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">Failed to load content.</td></tr>`;} 
-        finally { elements.loadingSpinner.innerHTML = ''; elements.moviesTable.classList.remove('hidden'); }
-    };
-    
-    const resetPromoForm = () => {
-        elements.promoForm.reset();
-        elements.promoIdInput.value = '';
-        elements.promoImagePreview.src = '';
-        elements.promoImagePreview.classList.add('hidden');
-        elements.promoForm.querySelector('button[type="submit"]').textContent = 'Save Promo';
-        if (elements.promoCancelBtn) elements.promoCancelBtn.classList.add('hidden');
-        promoEditMode = false;
+    const renderMoviesTable = (page = 1, searchTerm = '') => {
+        const filteredMovies = allMovies.filter(movie => movie.title.toLowerCase().includes(searchTerm.toLowerCase()));
+        
+        const itemsPerPage = 10;
+        const totalPages = Math.ceil(filteredMovies.length / itemsPerPage);
+        const startIndex = (page - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedItems = filteredMovies.slice(startIndex, endIndex);
+
+        elements.moviesList.innerHTML = paginatedItems.map(movie => `<tr class="border-b border-gray-700 hover:bg-gray-900"><td class="p-3"><img src="${movie.posterUrl}" alt="${movie.title}" class="h-16 w-auto rounded object-cover"></td><td class="p-3 font-semibold">${movie.title}</td><td class="p-3">${movie.year}</td><td class="p-3"><span class="text-xs font-bold ${movie.type === 'Web Series' ? 'text-green-400' : 'text-cyan-400'}">${movie.type || 'Movie'}</span></td><td class="p-3"><button data-id="${movie.id}" class="edit-btn bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-2 rounded mr-2">Edit</button><button data-id="${movie.id}" class="delete-btn bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-2 rounded">Delete</button></td></tr>`).join('');
+        elements.loadingSpinner.innerHTML = '';
+        elements.moviesTable.classList.remove('hidden');
+
+        renderAdminPagination(totalPages, page, searchTerm);
     };
 
-    const renderPromos = async () => {
-        elements.promosLoadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
-        elements.promosList.innerHTML = '';
+    const renderAdminPagination = (totalPages, currentPage, searchTerm) => {
+        if (totalPages <= 1) {
+            elements.adminPaginationContainer.innerHTML = '';
+            return;
+        }
+        let buttons = '';
+        buttons += `<button data-page="${currentPage - 1}" class="admin-page-link ${currentPage === 1 ? 'pointer-events-none opacity-50' : ''} px-3 py-2 bg-gray-700 rounded-md hover:bg-cyan-500">Prev</button>`;
+        buttons += `<span class="px-3 py-2 text-gray-400">Page ${currentPage} of ${totalPages}</span>`;
+        buttons += `<button data-page="${currentPage + 1}" class="admin-page-link ${currentPage === totalPages ? 'pointer-events-none opacity-50' : ''} px-3 py-2 bg-gray-700 rounded-md hover:bg-cyan-500">Next</button>`;
+        elements.adminPaginationContainer.innerHTML = buttons;
+    };
+    
+    elements.adminPaginationContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('admin-page-link')) {
+            const page = parseInt(e.target.dataset.page);
+            renderMoviesTable(page, elements.adminSearchInput.value);
+        }
+    });
+
+    elements.adminSearchInput.addEventListener('input', () => {
+        renderMoviesTable(1, elements.adminSearchInput.value);
+    });
+
+    const initialLoad = async () => {
+        elements.loadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
         try {
-            const promos = await getAds();
-            if (promos.length === 0) {
-                elements.promosList.innerHTML = `<p class="text-gray-500 text-center">No promos created yet.</p>`;
-            } else {
-                elements.promosList.innerHTML = promos.map(promo => {
-                    const isVisible = promo.visible !== false; // Default to visible if field is missing
-                    return `
-                    <div class="promo-row flex items-center justify-between gap-4">
-                        <img src="${promo.imageUrl}" class="h-12 w-24 object-contain rounded bg-gray-700">
-                        <div class="flex-1">
-                            <p class="text-sm text-white">${promo.location}</p>
-                            <p class="text-xs text-gray-400 truncate">${promo.targetUrl}</p>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" data-id="${promo.id}" class="sr-only peer promo-visibility-toggle" ${isVisible ? 'checked' : ''}>
-                                <div class="w-11 h-6 bg-gray-600 rounded-full peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
-                            </label>
-                            <button data-id="${promo.id}" class="promo-delete-btn bg-red-600 hover:bg-red-700 text-white text-sm py-1 px-2 rounded">Delete</button>
-                        </div>
-                    </div>
-                `}).join('');
-            }
-        } catch (error) {
-            elements.promosList.innerHTML = `<p class="text-red-500 text-center">Failed to load promos.</p>`;
-        } finally {
-            elements.promosLoadingSpinner.innerHTML = '';
+            allMovies = (await getMovies()).sort((a,b) => a.title.localeCompare(b.title));
+            renderMoviesTable(1);
+        } catch (error) { 
+            elements.loadingSpinner.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">Failed to load content.</td></tr>`;
         }
     };
-    
-    if(elements.promoForm) {
-        elements.promoForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const promoData = {
-                imageUrl: elements.promoImageUrlInput.value,
-                targetUrl: document.getElementById('promo-target-url').value,
-                location: document.getElementById('promo-location').value,
-                visible: true // Always visible on creation
-            };
-            if (!promoData.imageUrl || !promoData.targetUrl) return showToast('Promo Image and Target URL are required.', true);
-            
-            try {
-                await addAd(promoData);
-                showToast('Promo added successfully!');
-                resetPromoForm();
-                renderPromos();
-            } catch (error) {
-                showToast(`Error adding promo: ${error.message}`, true);
-            }
-        });
-    }
-
-    if(elements.promosList) {
-        elements.promosList.addEventListener('click', async (e) => {
-            const target = e.target;
-            // Handle delete
-            if (target.classList.contains('promo-delete-btn')) {
-                if (confirm('Are you sure you want to delete this promo?')) {
-                    try {
-                        await deleteAd(target.dataset.id);
-                        showToast('Promo deleted!');
-                        renderPromos();
-                    } catch (error) { showToast(`Error deleting promo: ${error.message}`, true); }
-                }
-            }
-        });
-
-        elements.promosList.addEventListener('change', async (e) => {
-            const target = e.target;
-             // Handle visibility toggle
-            if (target.classList.contains('promo-visibility-toggle')) {
-                const promoId = target.dataset.id;
-                const newVisibility = target.checked;
-                try {
-                    await updateAd(promoId, { visible: newVisibility });
-                    showToast(`Promo status updated to ${newVisibility ? 'Visible' : 'Hidden'}.`);
-                } catch (error) {
-                    showToast(`Error updating status: ${error.message}`, true);
-                    target.checked = !newVisibility; // Revert checkbox on failure
-                }
-            }
-        });
-    }
     
     const renderMovieRequests = async () => {
         elements.requestsLoadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
@@ -416,7 +363,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     elements.genresContainer.innerHTML = ALL_GENRES.map(genre => `<div><input type="checkbox" id="genre-${genre.toLowerCase()}" value="${genre}" class="genre-checkbox"><label for="genre-${genre.toLowerCase()}" class="genre-checkbox-label">${genre}</label></div>`).join('');
     resetForm();
-    renderMoviesTable();
+    initialLoad();
     renderMovieRequests();
-    renderPromos();
 });
