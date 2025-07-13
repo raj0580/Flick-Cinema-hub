@@ -7,7 +7,9 @@ const adsCollection = collection(db, 'ads');
 const reportsCollection = collection(db, 'reports');
 
 export const getMovies = async () => {
-    const snapshot = await getDocs(query(moviesCollection, orderBy('timestamp', 'desc')));
+    // Add timestamp sorting here
+    const q = query(moviesCollection, orderBy('timestamp', 'desc'));
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 export const getMovieById = async (id) => {
@@ -16,11 +18,11 @@ export const getMovieById = async (id) => {
     return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
 };
 export const addMovie = async (movieData) => {
-    movieData.timestamp = new Date(); // Add timestamp on creation
+    movieData.timestamp = new Date();
     return await addDoc(moviesCollection, movieData);
 };
 export const updateMovie = async (id, movieData) => {
-    movieData.timestamp = new Date(); // Update timestamp on edit
+    movieData.timestamp = new Date();
     return await updateDoc(doc(db, 'movies', id), movieData);
 };
 export const deleteMovie = async (id) => await deleteDoc(doc(db, 'movies', id));
