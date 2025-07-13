@@ -4,9 +4,10 @@ import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, orderBy
 const moviesCollection = collection(db, 'movies');
 const requestsCollection = collection(db, 'movie_requests');
 const adsCollection = collection(db, 'ads');
+const reportsCollection = collection(db, 'reports');
 
 export const getMovies = async () => {
-    const snapshot = await getDocs(moviesCollection);
+    const snapshot = await getDocs(query(moviesCollection, orderBy('timestamp', 'desc')));
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 export const getMovieById = async (id) => {
@@ -14,8 +15,14 @@ export const getMovieById = async (id) => {
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
 };
-export const addMovie = async (movieData) => await addDoc(moviesCollection, movieData);
-export const updateMovie = async (id, movieData) => await updateDoc(doc(db, 'movies', id), movieData);
+export const addMovie = async (movieData) => {
+    movieData.timestamp = new Date(); // Add timestamp on creation
+    return await addDoc(moviesCollection, movieData);
+};
+export const updateMovie = async (id, movieData) => {
+    movieData.timestamp = new Date(); // Update timestamp on edit
+    return await updateDoc(doc(db, 'movies', id), movieData);
+};
 export const deleteMovie = async (id) => await deleteDoc(doc(db, 'movies', id));
 
 export const addMovieRequest = async (requestData) => await addDoc(requestsCollection, requestData);
@@ -31,5 +38,13 @@ export const getAds = async () => {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 export const addAd = async (adData) => await addDoc(adsCollection, adData);
-export const updateAd = async (id, adData) => await updateDoc(doc(db, 'ads', id), adData); // NEW
+export const updateAd = async (id, adData) => await updateDoc(doc(db, 'ads', id), adData);
 export const deleteAd = async (id) => await deleteDoc(doc(db, 'ads', id));
+
+export const addReport = async (reportData) => await addDoc(reportsCollection, reportData);
+export const getReports = async () => {
+    const q = query(reportsCollection, orderBy('reportedAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+export const deleteReport = async (id) => await deleteDoc(doc(db, 'reports', id));
