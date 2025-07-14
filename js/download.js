@@ -1,4 +1,4 @@
-import { getMovieById, addReport } from './db.js';
+import { getMovieById, addReport, getReports } from './db.js';
 
 const initializePopup = () => {
     let countdownInterval;
@@ -45,22 +45,75 @@ const renderDownloadPage = async () => {
     };
 
     try {
-        const movie = await getMovieById(movieId);
+        // Fetch both movie data and existing reports at the same time
+        const [movie, existingReports] = await Promise.all([
+            getMovieById(movieId),
+            getReports()
+        ]);
+        
+        const reportedUrls = new Set(existingReports.map(report => report.brokenUrl));
+
         loadingSpinner.style.display = 'none';
         if (!movie) return errorMessage.style.display = 'block';
 
         document.title = `Download ${movie.title} - Flick Cinema`;
-        document.getElementById('movie-title').textContent = `Download ${movie.title} (${movie.year})`;
+        document.getElementById('movie-title').textContent = `${movie.title} (${movie.year})`;
+        document.getElementById('movie-poster').src = movie.posterUrl;
         
+        const detailsContainer = document.getElementById('extra-details-container');
+        let detailsHtml = '';
+        if (movie.year) detailsHtml += `<div><strong>Year:</strong> <span class="text-gray-200">${movie.year}</span></div>`;
+        if (movie.category) detailsHtml += `<div><strong>Category:</strong> <span class="text-gray-200">${movie.category}</span></div>`;
+        if (movie.language) detailsHtml += `<div><strong>Language:</strong> <span class="text-gray-200">${movie.language}</span></div>`;
+        detailsContainer.innerHTML = detailsHtml;
+
         const downloadsContainer = document.getElementById('downloads-container');
         let downloadsHtml = '';
         
-        const renderOldLinks = (links) => links.map(link => `<div class="flex items-center gap-2"><a href="${link.url}" class="download-link flex-1 flex justify-between items-center bg-gray-800 hover:bg-gray-700 p-3 rounded-lg transition"><span class="font-semibold text-cyan-400">${link.quality}</span><span class="text-sm text-gray-400">${link.size}</span><span class="bg-cyan-500 text-white text-sm font-bold py-1 px-3 rounded">Download</span></a><button class="report-link-btn p-2 bg-red-800/50 hover:bg-red-700 rounded-lg" data-movie-title="${movie.title}" data-quality="${link.quality}" data-url="${link.url}">Report</button></div>`).join('');
-        const renderNewLinks = (groups) => (groups || []).map(group => `<div class="mb-4"><h4 class="text-md font-semibold text-gray-300 mb-3 border-b-2 border-gray-700 pb-1">${group.quality}</h4><div class="space-y-2 pl-2">${(group.links || []).map((link, index) => `<div class="flex items-center gap-2"><a href="${link.url}" class="download-link flex-1 flex justify-between items-center bg-gray-900 hover:bg-gray-800 p-3 rounded-lg transition"><span class="font-semibold text-cyan-400">Link ${index + 1}</span><span class="text-sm text-gray-400">${link.size}</span><span class="bg-cyan-500 text-white text-sm font-bold py-1 px-3 rounded">Download</span></a><button class="report-link-btn p-2 bg-red-800/50 hover:bg-red-700 rounded-lg" data-movie-title="${movie.title}" data-quality="${group.quality} - Link ${index + 1}" data-url="${link.url}">Report</button></div>`).join('')}</div></div>`).join('');
+        const renderOldLinks = (links) => links.map((link, i) => {
+            const isReported = reportedUrls.has(link.url);
+            return `
+            <div class="link-wrapper">
+                <a href="${link.url}" class="download-link flex justify-between items-center bg-gray-800 hover:bg-gray-700 p-3 rounded-lg transition">
+                    <span class="font-semibold text-cyan-400">${link.quality}</span>
+                    <span class="text-sm text-gray-400">${link.size}</span>
+                    <span class="bg-cyan-500 text-white text-sm font-bold py-1 px-3 rounded">Download</span>
+                </a>
+                <div class="report-container mt-2 text-center">
+                    <button class="report-link-btn text-xs px-2 py-1 ${isReported ? 'bg-gray-600 cursor-not-allowed' : 'bg-red-800/50 hover:bg-red-700'} rounded-lg" data-movie-title="${movie.title}" data-quality="${link.quality}" data-url="${link.url}" ${isReported ? 'disabled' : ''}>
+                        ${isReported ? 'Already Reported' : 'Report Link'}
+                    </button>
+                </div>
+            </div>
+        `}).join('');
+        
+        const renderNewLinks = (groups) => (groups || []).map(group => `
+            <div class="mb-4">
+                <h4 class="text-md font-semibold text-gray-300 mb-3 border-b-2 border-gray-700 pb-1">${group.quality}</h4>
+                <div class="space-y-2 pl-2">
+                    ${(group.links || []).map((link, index) => {
+                        const isReported = reportedUrls.has(link.url);
+                        return `
+                        <div class="link-wrapper">
+                            <a href="${link.url}" class="download-link flex justify-between items-center bg-gray-900 hover:bg-gray-800 p-3 rounded-lg transition">
+                                <span class="font-semibold text-cyan-400">Link ${index + 1}</span>
+                                <span class="text-sm text-gray-400">${link.size}</span>
+                                <span class="bg-cyan-500 text-white text-sm font-bold py-1 px-3 rounded">Download</span>
+                            </a>
+                            <div class="report-container mt-2 text-center">
+                                <button class="report-link-btn text-xs px-2 py-1 ${isReported ? 'bg-gray-600 cursor-not-allowed' : 'bg-red-800/50 hover:bg-red-700'} rounded-lg" data-movie-title="${movie.title}" data-quality="${group.quality} - Link ${index + 1}" data-url="${link.url}" ${isReported ? 'disabled' : ''}>
+                                    ${isReported ? 'Already Reported' : 'Report Link'}
+                                </button>
+                            </div>
+                        </div>
+                    `}).join('')}
+                </div>
+            </div>
+        `).join('');
         
         const isNewFormat = movie.downloadLinks && movie.downloadLinks.length > 0 && typeof movie.downloadLinks[0].links !== 'undefined';
         if (isNewFormat) {
-            downloadsHtml += `<h3 class="text-xl font-bold mb-4 text-gray-300">${movie.type === 'Web Series' ? 'Full Season Pack' : 'Download Links'}</h3><div class="bg-gray-800 p-4 rounded-lg">${renderNewLinks(movie.downloadLinks)}</div>`;
+            downloadsHtml += `<h3 class="text-xl font-bold mb-4 text-gray-300">${movie.type === 'Web Series' ? 'Full Season Pack' : 'Download Links'}</h3><div class="bg-gray-800/50 p-4 rounded-lg">${renderNewLinks(movie.downloadLinks)}</div>`;
         } else if (movie.downloadLinks && movie.downloadLinks.length > 0) {
             downloadsHtml += `<div class="space-y-3">${renderOldLinks(movie.downloadLinks)}</div>`;
         }
@@ -68,7 +121,7 @@ const renderDownloadPage = async () => {
         if (movie.type === 'Web Series' && movie.episodes && movie.episodes.length > 0) {
             if (downloadsHtml !== '') downloadsHtml += `<hr class="border-gray-700 my-8">`;
             downloadsHtml += `<h3 class="text-xl font-bold mb-4 text-gray-300">Individual Episodes</h3>`;
-            downloadsHtml += movie.episodes.map(episode => `<details class="bg-gray-800 rounded-lg overflow-hidden mb-3"><summary class="font-bold text-lg p-4 bg-gray-700/50 hover:bg-gray-700">${episode.episodeTitle}</summary><div class="p-4 space-y-4">${renderNewLinks(episode.qualityGroups) || '<p class="text-gray-400">No links for this episode.</p>'}</div></details>`).join('');
+            downloadsHtml += movie.episodes.map(episode => `<details class="bg-gray-800/50 rounded-lg overflow-hidden mb-3"><summary class="font-bold text-lg p-4 bg-gray-700/50 hover:bg-gray-700">${episode.episodeTitle}</summary><div class="p-4 space-y-4">${renderNewLinks(episode.qualityGroups) || '<p class="text-gray-400">No links for this episode.</p>'}</div></details>`).join('');
         }
         
         downloadsContainer.innerHTML = downloadsHtml || '<p class="text-gray-400">No download links available.</p>';
@@ -76,14 +129,13 @@ const renderDownloadPage = async () => {
 
         downloadsContainer.addEventListener('click', async (e) => {
             const downloadButton = e.target.closest('.download-link');
-            const reportButton = e.target.closest('.report-link-btn');
-
             if (downloadButton) {
                 e.preventDefault();
                 showPopup();
                 window.open(downloadButton.href, '_blank');
             }
-
+            
+            const reportButton = e.target.closest('.report-link-btn');
             if (reportButton) {
                 e.preventDefault();
                 const { movieTitle, quality, url } = reportButton.dataset;
@@ -92,14 +144,13 @@ const renderDownloadPage = async () => {
                 try {
                     await addReport({ movieTitle, quality, brokenUrl: url, reportedAt: new Date() });
                     showToast('Link reported. Thank you!');
+                    reportButton.textContent = 'Reported';
+                    reportButton.classList.remove('bg-red-800/50', 'hover:bg-red-700');
+                    reportButton.classList.add('bg-gray-600', 'cursor-not-allowed');
                 } catch (err) {
                     showToast('Failed to report link.', true);
                     reportButton.disabled = false;
-                } finally {
-                    setTimeout(() => {
-                        if (reportButton.disabled) reportButton.textContent = 'Reported';
-                        else reportButton.textContent = 'Report';
-                    }, 2000);
+                    reportButton.textContent = 'Report Link';
                 }
             }
         });
@@ -112,7 +163,6 @@ const renderDownloadPage = async () => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // This script only runs on the download page
     renderDownloadPage();
     initializePopup();
 });
