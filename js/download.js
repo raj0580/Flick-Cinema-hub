@@ -69,6 +69,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (movie.language) detailsHtml += `<div><strong>Language:</strong> <span class="text-gray-200">${movie.language}</span></div>`;
             detailsContainer.innerHTML = detailsHtml;
 
+            // --- THIS IS THE FIX ---
+            const screenshotsGrid = document.getElementById('screenshots-grid');
+            screenshotsGrid.innerHTML = (movie.screenshots || []).map(url => `<a href="${url}" target="_blank"><img src="${url}" class="w-full h-auto rounded-lg object-cover" alt="Screenshot"></a>`).join('');
+
             const downloadsContainer = document.getElementById('downloads-container');
             let downloadsHtml = '';
             
@@ -128,20 +132,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             downloadsContainer.addEventListener('click', async (e) => {
                 const downloadButton = e.target.closest('.download-link');
-                const reportButton = e.target.closest('.report-link-btn');
-
                 if (downloadButton) {
                     e.preventDefault();
                     showPopup();
                     window.open(downloadButton.href, '_blank');
-                    
                     const wrapper = downloadButton.closest('.link-wrapper');
                     if(wrapper) {
                        const reportContainer = wrapper.querySelector('.report-container');
                        if(reportContainer) reportContainer.classList.add('show');
                     }
                 }
-
+                
+                const reportButton = e.target.closest('.report-link-btn');
                 if (reportButton) {
                     const { movieTitle, quality, url } = reportButton.dataset;
                     reportButton.textContent = 'Reporting...';
