@@ -12,7 +12,7 @@
         #telegram-popup.show > div { transform: scale(1); opacity: 1; transition: all 0.3s ease-out; }
         #telegram-popup > div { transform: scale(0.95); opacity: 0; }
         .report-container { transition: all 0.3s ease-in-out; max-height: 0; overflow: hidden; }
-        .report-container.show { max-height: 100px; } /* Adjust max-height as needed */
+        .report-container.show { max-height: 100px; }
     </style>
 </head>
 <body class="bg-gray-900 text-white font-sans">
@@ -23,14 +23,11 @@
         <div id="loading-spinner" class="text-center py-20"><div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-500 mx-auto"></div><p class="mt-4">Loading Download Links...</p></div>
 
         <div id="download-page-content" class="hidden">
-            <!-- NEW: Movie Info Header -->
             <section class="flex flex-col sm:flex-row gap-6 bg-gray-800/50 p-4 sm:p-6 rounded-lg mb-8">
                 <img id="movie-poster" src="" alt="Poster" class="w-24 h-36 sm:w-32 sm:h-auto object-cover rounded-md shadow-lg mx-auto sm:mx-0">
                 <div class="text-center sm:text-left">
                     <h1 id="movie-title" class="text-2xl sm:text-3xl font-bold"></h1>
-                    <div id="extra-details-container" class="flex justify-center sm:justify-start flex-wrap gap-x-4 gap-y-1 text-sm text-gray-400 mt-2">
-                        <!-- Year, Category, Language injected here -->
-                    </div>
+                    <div id="extra-details-container" class="flex justify-center sm:justify-start flex-wrap gap-x-4 gap-y-1 text-sm text-gray-400 mt-2"></div>
                 </div>
             </section>
             
