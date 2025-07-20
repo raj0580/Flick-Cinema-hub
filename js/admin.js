@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reportsLoadingSpinner: document.getElementById('reports-loading-spinner'),
         adminSearchInput: document.getElementById('admin-search-input'),
         adminPaginationContainer: document.getElementById('admin-pagination-container'),
+        isTrendingCheckbox: document.getElementById('isTrending'),
     };
 
     let editMode = false;
@@ -82,6 +83,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById(key);
             if (el && content[key]) el.value = content[key];
         });
+        
+        elements.isTrendingCheckbox.checked = content.isTrending === true;
         
         document.getElementById('tags').value = content.tags ? content.tags.join(', ') : '';
         if (elements.posterUrlInput.value) { elements.posterPreview.src = elements.posterUrlInput.value; elements.posterPreview.classList.remove('hidden'); }
@@ -247,7 +250,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!elements.posterUrlInput.value) return showToast('Poster URL is required.', true);
         const getQualityGroupsData = (container) => [...container.querySelectorAll('.quality-group')].map(groupEl => ({quality: groupEl.querySelector('.quality-name-input').value.trim(), links: [...groupEl.querySelectorAll('.link-list .flex')].map(linkEl => ({size: linkEl.querySelector('.size-input').value.trim(), url: cleanDownloadUrl(linkEl.querySelector('.url-input').value.trim())})).filter(l => l.url)})).filter(g => g.quality && g.links.length > 0);
         const type = document.querySelector('input[name="type"]:checked').value;
-        const movieData = {type, title: document.getElementById('title').value, year: Number(document.getElementById('year').value), description: document.getElementById('description').value, posterUrl: elements.posterUrlInput.value, trailerUrl: document.getElementById('trailer-url').value, language: document.getElementById('language').value, category: document.getElementById('category').value, quality: document.getElementById('quality').value.trim(), genres: [...document.querySelectorAll('.genre-checkbox:checked')].map(cb => cb.value), tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(Boolean), screenshots: [...elements.screenshotsContainer.querySelectorAll('.screenshot-url-input')].map(input => input.value.trim()).filter(Boolean), downloadLinks: getQualityGroupsData(elements.movieQualityGroupsContainer)};
+        const movieData = {
+            type,
+            title: document.getElementById('title').value,
+            year: Number(document.getElementById('year').value),
+            description: document.getElementById('description').value,
+            posterUrl: elements.posterUrlInput.value,
+            trailerUrl: document.getElementById('trailer-url').value,
+            language: document.getElementById('language').value,
+            category: document.getElementById('category').value,
+            quality: document.getElementById('quality').value.trim(),
+            genres: [...document.querySelectorAll('.genre-checkbox:checked')].map(cb => cb.value),
+            tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(Boolean),
+            screenshots: [...elements.screenshotsContainer.querySelectorAll('.screenshot-url-input')].map(input => input.value.trim()).filter(Boolean),
+            downloadLinks: getQualityGroupsData(elements.movieQualityGroupsContainer),
+            isTrending: elements.isTrendingCheckbox.checked
+        };
         if (type === 'Web Series') movieData.episodes = [...elements.episodesContainer.querySelectorAll('.episode-field')].map(epEl => ({episodeTitle: epEl.querySelector('.episode-title-input').value.trim(), qualityGroups: getQualityGroupsData(epEl.querySelector('.quality-groups-container'))})).filter(ep => ep.episodeTitle && ep.qualityGroups.length > 0);
         try {
             if (editMode) await updateMovie(elements.movieIdInput.value, movieData);
@@ -282,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const startIndex = (page - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
         const paginatedItems = filteredMovies.slice(startIndex, endIndex);
-        elements.moviesList.innerHTML = paginatedItems.map(movie => `<tr class="border-b border-gray-700 hover:bg-gray-900"><td class="p-3"><img src="${movie.posterUrl}" alt="${movie.title}" class="h-16 w-auto rounded object-cover"></td><td class="p-3 font-semibold">${movie.title}</td><td class="p-3">${movie.year}</td><td class="p-3"><span class="text-xs font-bold ${movie.type === 'Web Series' ? 'text-green-400' : 'text-cyan-400'}">${movie.type || 'Movie'}</span></td><td class="p-3"><button data-id="${movie.id}" class="edit-btn bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-2 rounded mr-2">Edit</button><button data-id="${movie.id}" class="delete-btn bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-2 rounded">Delete</button></td></tr>`).join('');
+        elements.moviesList.innerHTML = paginatedItems.map(movie => `<tr class="border-b border-gray-700 hover:bg-gray-900"><td class="p-3"><img src="${movie.posterUrl}" alt="${movie.title}" class="h-16 w-auto rounded object-cover"></td><td class="p-3 font-semibold">${movie.isTrending ? '🔥 ' : ''}${movie.title}</td><td class="p-3">${movie.year}</td><td class="p-3"><span class="text-xs font-bold ${movie.type === 'Web Series' ? 'text-green-400' : 'text-cyan-400'}">${movie.type || 'Movie'}</span></td><td class="p-3"><button data-id="${movie.id}" class="edit-btn bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-2 rounded mr-2">Edit</button><button data-id="${movie.id}" class="delete-btn bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-2 rounded">Delete</button></td></tr>`).join('');
         elements.loadingSpinner.innerHTML = '';
         elements.moviesTable.classList.remove('hidden');
         renderAdminPagination(totalPages, page);
