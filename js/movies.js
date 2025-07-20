@@ -1,5 +1,7 @@
 import { getMovies, getMovieById, addMovieRequest, getAds, addReport, getReports } from './db.js';
 
+// --- This file now ONLY contains logic for index.html and movie.html ---
+
 const initializeMoviePageSearch = () => {
     const observer = new MutationObserver((mutations, obs) => {
         const searchIconBtn = document.getElementById('search-icon-btn');
@@ -137,12 +139,23 @@ const renderHomepage = async (initialSearchTerm = '') => {
         const selectedGenre = document.getElementById('genre-filter').value;
         const selectedYear = document.getElementById('year-filter').value;
         const selectedCategory = document.getElementById('category-filter').value;
-        const filtered = allMovies.filter(movie => ((movie.genres || []).includes(selectedGenre) || !selectedGenre) && movie.title.toLowerCase().includes(searchTerm) && (!selectedYear || movie.year == selectedYear) && (!selectedCategory || movie.category === selectedCategory));
+        
+        let filtered = allMovies.filter(movie => 
+            ((movie.genres || []).includes(selectedGenre) || !selectedGenre) && 
+            movie.title.toLowerCase().includes(searchTerm) && 
+            (!selectedYear || movie.year == selectedYear) && 
+            (!selectedCategory || movie.category === selectedCategory)
+        );
+        
+        // --- THIS IS THE FIX FOR SORTING ---
+        // Sort by year (descending) after filtering
+        filtered.sort((a, b) => b.year - a.year);
+        
         displayMovies(filtered, currentPage);
     };
 
     try {
-        allMovies = (await getMovies()).sort((a, b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
+        allMovies = await getMovies(); // No need to sort here anymore
         loadingSpinner.style.display = 'none';
         const populateFilters = (movies) => {
             const genres = [...new Set(movies.flatMap(m => m.genres || []))].sort();
