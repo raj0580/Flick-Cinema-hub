@@ -1,6 +1,34 @@
 import { getMovies, getMovieById, addMovieRequest, getAds, addReport, getReports } from './db.js';
 
-// --- SHARED FUNCTIONS ---
+const initializePopup = () => {
+    let countdownInterval;
+    const popup = document.getElementById('telegram-popup');
+    if (!popup) return;
+    const closeBtn = document.getElementById('close-popup-btn');
+    const countdownSpan = document.getElementById('popup-countdown');
+    const showPopup = () => {
+        popup.classList.remove('hidden');
+        setTimeout(() => popup.classList.add('show'), 10);
+        let seconds = 15;
+        countdownSpan.textContent = seconds;
+        clearInterval(countdownInterval);
+        countdownInterval = setInterval(() => {
+            seconds--;
+            countdownSpan.textContent = seconds;
+            if (seconds <= 0) hidePopup();
+        }, 1000);
+    };
+    const hidePopup = () => {
+        if (!popup) return;
+        clearInterval(countdownInterval);
+        popup.classList.remove('show');
+        setTimeout(() => popup.classList.add('hidden'), 300);
+    };
+    if (closeBtn) closeBtn.addEventListener('click', hidePopup);
+    if (popup) popup.addEventListener('click', (e) => { if (e.target === popup) hidePopup(); });
+    return { showPopup };
+};
+
 const renderMovieCard = (movie) => {
     const tagsHtml = `<div class="absolute top-2 right-2 flex flex-wrap justify-end gap-2">${movie.type === 'Web Series' ? `<span class="bg-green-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">SERIES</span>` : ''}${movie.quality ? `<span class="bg-cyan-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">${movie.quality}</span>` : ''}</div>`;
     return `<a href="movie.html?id=${movie.id}" class="group block bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-cyan-500/50 transition-shadow duration-300"><div class="relative"><img src="${movie.posterUrl}" alt="${movie.title}" class="w-full h-auto aspect-[2/3] object-cover transform group-hover:scale-105 transition-transform duration-300">${tagsHtml}</div><div class="p-3"><h3 class="text-md font-bold truncate group-hover:text-cyan-400">${movie.title}</h3><div class="text-xs text-gray-400 mt-1"><span>${movie.year}</span> •<span class="truncate">${(movie.genres || []).join(', ')}</span></div></div></a>`;
@@ -40,7 +68,6 @@ const renderAds = async () => {
     }
 };
 
-// --- HOMEPAGE SPECIFIC LOGIC ---
 const renderHomepage = async (initialSearchTerm = '') => {
     renderAds();
     const movieGrid = document.getElementById('movie-grid');
@@ -271,8 +298,8 @@ const renderMovieDetailPage = async () => {
     const loadingSpinner = document.getElementById('loading-spinner');
     const movieContent = document.getElementById('movie-content');
     const errorMessage = document.getElementById('error-message');
-    const { showPopup } = initializePopup(); // Get the showPopup function
     const toast = document.getElementById('toast');
+    const { showPopup } = initializePopup();
 
     const showToast = (message, isError = false) => {
         if (!toast) return;
@@ -318,7 +345,7 @@ const renderMovieDetailPage = async () => {
 
         const downloadsContainer = document.getElementById('downloads-container');
         let downloadsHtml = '';
-
+        
         const renderLinkRow = (link, quality, index = null, isOldFormat = false) => {
             const isReported = reportedUrls.has(link.url);
             const linkLabel = isOldFormat ? quality : `Link ${index + 1}`;
@@ -333,13 +360,15 @@ const renderMovieDetailPage = async () => {
                             <span class="text-sm text-gray-400">${link.size}</span>
                             <span class="bg-cyan-500 text-white text-sm font-bold py-1 px-3 rounded">Download</span>
                         </a>
-                        <button class="report-link-btn text-xs px-2 py-1 ${isReported ? 'bg-gray-600 cursor-not-allowed' : 'bg-red-800/50 hover:bg-red-700'} rounded-lg" 
-                            data-movie-title="${movie.title}" 
-                            data-quality="${qualityLabel}" 
-                            data-url="${link.url}" 
-                            ${isReported ? 'disabled' : ''}>
-                            ${isReported ? 'Reported' : 'Report'}
-                        </button>
+                        <div class="report-container text-center">
+                            <button class="report-link-btn text-xs px-2 py-1 ${isReported ? 'bg-gray-600 cursor-not-allowed' : 'bg-red-800/50 hover:bg-red-700'} rounded-lg" 
+                                data-movie-title="${movie.title}" 
+                                data-quality="${qualityLabel}" 
+                                data-url="${link.url}" 
+                                ${isReported ? 'disabled' : ''}>
+                                ${isReported ? 'Reported' : 'Report'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -370,8 +399,14 @@ const renderMovieDetailPage = async () => {
                 e.preventDefault();
                 showPopup();
                 window.open(downloadButton.href, '_blank');
+                
+                const wrapper = downloadButton.closest('.link-wrapper');
+                if(wrapper) {
+                   const reportContainer = wrapper.querySelector('.report-container');
+                   if(reportContainer) reportContainer.classList.add('show');
+                }
             }
-
+            
             const reportButton = e.target.closest('.report-link-btn');
             if (reportButton) {
                 const { movieTitle, quality, url } = reportButton.dataset;
@@ -400,6 +435,7 @@ const renderMovieDetailPage = async () => {
     }
 };
 
+
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('movie-grid')) {
         const urlParams = new URLSearchParams(window.location.search);
@@ -408,9 +444,10 @@ document.addEventListener('DOMContentLoaded', () => {
         handleRequestForm();
     } else if (document.getElementById('download-page-content')) {
         // This is a failsafe. If download.js is not loaded, this will trigger.
-        // But the main logic should be in download.js
-        console.log("On download page, but logic should be in download.js");
-    } else if (document.getElementById('movie-content')) {
+        // But the main logic is now in download.js
+        console.log("On download page, main logic is in js/download.js");
+    }
+    else if (document.getElementById('movie-content')) {
         renderMovieDetailPage();
         initializeMoviePageSearch();
     }
