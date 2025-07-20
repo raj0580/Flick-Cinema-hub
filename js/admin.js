@@ -277,17 +277,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderMoviesTable = (page = 1, searchTerm = '') => {
         const filteredMovies = allMovies.filter(movie => movie.title.toLowerCase().includes(searchTerm.toLowerCase()));
-        
         const itemsPerPage = 10;
         const totalPages = Math.ceil(filteredMovies.length / itemsPerPage);
         const startIndex = (page - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
         const paginatedItems = filteredMovies.slice(startIndex, endIndex);
-
         elements.moviesList.innerHTML = paginatedItems.map(movie => `<tr class="border-b border-gray-700 hover:bg-gray-900"><td class="p-3"><img src="${movie.posterUrl}" alt="${movie.title}" class="h-16 w-auto rounded object-cover"></td><td class="p-3 font-semibold">${movie.title}</td><td class="p-3">${movie.year}</td><td class="p-3"><span class="text-xs font-bold ${movie.type === 'Web Series' ? 'text-green-400' : 'text-cyan-400'}">${movie.type || 'Movie'}</span></td><td class="p-3"><button data-id="${movie.id}" class="edit-btn bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-2 rounded mr-2">Edit</button><button data-id="${movie.id}" class="delete-btn bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-2 rounded">Delete</button></td></tr>`).join('');
         elements.loadingSpinner.innerHTML = '';
         elements.moviesTable.classList.remove('hidden');
-
         renderAdminPagination(totalPages, page);
     };
 
@@ -317,8 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialLoad = async () => {
         elements.loadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
         try {
-            allMovies = (await getMovies()); // Fetch without sorting
-            // Safe sorting in JavaScript
+            allMovies = (await getMovies());
             allMovies.sort((a,b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
             renderMoviesTable(1);
         } catch (error) { 
