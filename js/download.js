@@ -1,6 +1,7 @@
 import { getMovieById, addReport, getReports } from './db.js';
 
 document.addEventListener('DOMContentLoaded', () => {
+    
     let countdownInterval;
     const popup = document.getElementById('telegram-popup');
     const closeBtn = document.getElementById('close-popup-btn');
@@ -29,8 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (closeBtn) closeBtn.addEventListener('click', hidePopup);
     if (popup) popup.addEventListener('click', (e) => { if (e.target === popup) hidePopup(); });
-
-
+    
     const renderDownloadPage = async () => {
         const params = new URLSearchParams(window.location.search);
         const movieId = params.get('id');
@@ -72,25 +72,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const downloadsContainer = document.getElementById('downloads-container');
             let downloadsHtml = '';
             
-            const renderLinkRow = (link, quality, index = null) => {
+            const renderLinkRow = (link, quality, index = null, isOldFormat = false) => {
                 const isReported = reportedUrls.has(link.url);
-                const linkLabel = index !== null ? `Link ${index + 1}` : quality;
-                const qualityLabel = index !== null ? `${quality} - Link ${index + 1}` : quality;
+                const linkLabel = isOldFormat ? quality : `Link ${index + 1}`;
+                const qualityLabel = isOldFormat ? quality : `${quality} - Link ${index + 1}`;
+                const bgClass = isOldFormat ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-900 hover:bg-gray-800';
+                
                 return `
                     <div class="link-wrapper mt-2">
                         <div class="flex items-center gap-2">
-                            <a href="${link.url}" class="download-link flex-1 flex justify-between items-center bg-gray-900 hover:bg-gray-800 p-3 rounded-lg transition">
+                            <a href="${link.url}" class="download-link flex-1 flex justify-between items-center ${bgClass} p-3 rounded-lg transition">
                                 <span class="font-semibold text-cyan-400">${linkLabel}</span>
                                 <span class="text-sm text-gray-400">${link.size}</span>
                                 <span class="bg-cyan-500 text-white text-sm font-bold py-1 px-3 rounded">Download</span>
                             </a>
-                            <button class="report-link-btn text-xs px-2 py-1 ${isReported ? 'bg-gray-600 cursor-not-allowed' : 'bg-red-800/50 hover:bg-red-700'} rounded-lg" 
-                                data-movie-title="${movie.title}" 
-                                data-quality="${qualityLabel}" 
-                                data-url="${link.url}" 
-                                ${isReported ? 'disabled' : ''}>
-                                ${isReported ? 'Reported' : 'Report'}
-                            </button>
+                            <div id="report-container-${quality}-${index}" class="report-container text-center">
+                                <button class="report-link-btn text-xs px-2 py-1 ${isReported ? 'bg-gray-600 cursor-not-allowed' : 'bg-red-800/50 hover:bg-red-700'} rounded-lg" 
+                                    data-movie-title="${movie.title}" 
+                                    data-quality="${qualityLabel}" 
+                                    data-url="${link.url}" 
+                                    ${isReported ? 'disabled' : ''}>
+                                    ${isReported ? 'Reported' : 'Report'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -100,15 +104,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="mb-4">
                     <h4 class="text-md font-semibold text-gray-300 mb-3 border-b-2 border-gray-700 pb-1">${group.quality}</h4>
                     <div class="space-y-2 pl-2">
-                        ${(group.links || []).map((link, index) => renderLinkRow(link, group.quality, index)).join('')}
+                        ${(group.links || []).map((link, index) => renderLinkRow(link, group.quality, index, false)).join('')}
                     </div>
                 </div>`).join('');
             
+            const renderOldLinks = (links) => links.map(link => renderLinkRow(link, link.quality, null, true)).join('');
+
             const isNewFormat = movie.downloadLinks && movie.downloadLinks.length > 0 && typeof movie.downloadLinks[0].links !== 'undefined';
             if (isNewFormat) {
                 downloadsHtml += `<h3 class="text-xl font-bold mb-4 text-gray-300">${movie.type === 'Web Series' ? 'Full Season Pack' : 'Download Links'}</h3><div class="bg-gray-800/50 p-4 rounded-lg">${renderNewLinks(movie.downloadLinks)}</div>`;
             } else if (movie.downloadLinks && movie.downloadLinks.length > 0) {
-                 downloadsHtml += `<div class="bg-gray-800/50 p-4 rounded-lg space-y-3">${movie.downloadLinks.map(link => renderLinkRow(link, link.quality)).join('')}</div>`;
+                 downloadsHtml += `<div class="bg-gray-800/50 p-4 rounded-lg space-y-3">${renderOldLinks(movie.downloadLinks)}</div>`;
             }
             
             if (movie.type === 'Web Series' && movie.episodes && movie.episodes.length > 0) {
@@ -128,6 +134,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     e.preventDefault();
                     showPopup();
                     window.open(downloadButton.href, '_blank');
+                    const wrapper = downloadButton.closest('.link-wrapper');
+                    if(wrapper) {
+                       const reportContainer = wrapper.querySelector('.report-container');
+                       if(reportContainer) reportContainer.classList.add('show');
+                    }
                 }
 
                 if (reportButton) {
