@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (type === 'Web Series') movieData.episodes = [...elements.episodesContainer.querySelectorAll('.episode-field')].map(epEl => ({episodeTitle: epEl.querySelector('.episode-title-input').value.trim(), qualityGroups: getQualityGroupsData(epEl.querySelector('.quality-groups-container'))})).filter(ep => ep.episodeTitle && ep.qualityGroups.length > 0);
         try {
             if (editMode) await updateMovie(elements.movieIdInput.value, movieData);
-            else await addMovie(movieData);
+            else await addMovie(elements.movieIdInput.value, movieData);
             showToast(`Content ${editMode ? 'updated' : 'added'} successfully!`);
             resetForm();
             initialLoad();
@@ -317,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialLoad = async () => {
         elements.loadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
         try {
-            allMovies = await getMovies();
+            allMovies = (await getMovies());
             allMovies.sort((a,b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
             renderMoviesTable(1);
         } catch (error) { 
