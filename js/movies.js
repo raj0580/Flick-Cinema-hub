@@ -1,4 +1,6 @@
-import { getMovies, getMovieById, addMovieRequest, getAds, getReports } from './db.js';
+import { getMovies, getMovieById, addMovieRequest, getAds, addReport, getReports } from './db.js';
+
+// --- This file now contains logic for index.html AND movie.html ---
 
 const initializeMoviePageSearch = () => {
     const observer = new MutationObserver((mutations, obs) => {
@@ -271,11 +273,9 @@ const renderRecommendations = async (currentMovie) => {
 
 const renderMovieDetailPage = async () => {
     renderAds();
-    const pathSegments = window.location.pathname.split('/');
-    const movieId = pathSegments.find(segment => segment.length > 15 && !segment.includes('.'));
-    if (!movieId) {
-        return (document.getElementById('error-message').style.display = 'block', document.getElementById('loading-spinner').style.display = 'none');
-    }
+    const params = new URLSearchParams(window.location.search);
+    const movieId = params.get('id');
+    if (!movieId) return window.location.href = '/index.html';
 
     const loadingSpinner = document.getElementById('loading-spinner');
     const movieContent = document.getElementById('movie-content');
@@ -316,7 +316,7 @@ const renderMovieDetailPage = async () => {
 
         const downloadBtn = document.getElementById('get-download-links-btn');
         if (downloadBtn) {
-            downloadBtn.href = `/download/${movieId}`;
+            downloadBtn.href = `/download.html?id=${movieId}`;
         }
 
         movieContent.style.display = 'block';
@@ -329,13 +329,12 @@ const renderMovieDetailPage = async () => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    const path = window.location.pathname;
-    if (path.endsWith('/') || path.endsWith('/index.html') || window.location.search.includes('?page=') || window.location.search.includes('?search=')) {
+    if (document.getElementById('movie-grid')) {
         const urlParams = new URLSearchParams(window.location.search);
         const searchTerm = urlParams.get('search');
         renderHomepage(searchTerm);
         handleRequestForm();
-    } else if (path.includes('/movie/')) {
+    } else if (document.getElementById('movie-content')) {
         renderMovieDetailPage();
         initializeMoviePageSearch();
     }
