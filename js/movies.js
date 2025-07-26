@@ -1,4 +1,4 @@
-import { getMovies, getMovieById, addMovieRequest, getAds } from './db.js';
+import { getMovies, getMovieById, addMovieRequest, getAds, getReports } from './db.js';
 
 const initializeMoviePageSearch = () => {
     const observer = new MutationObserver((mutations, obs) => {
@@ -16,7 +16,7 @@ const initializeMoviePageSearch = () => {
                 document.getElementById('movie-page-search-form').addEventListener('submit', (e) => {
                     e.preventDefault();
                     const searchTerm = document.getElementById('movie-page-search-input').value;
-                    if (searchTerm) window.location.href = `/?search=${encodeURIComponent(searchTerm)}`;
+                    if (searchTerm) window.location.href = `/index.html?search=${encodeURIComponent(searchTerm)}`;
                 });
                 isSearchVisible = true;
             };
@@ -272,9 +272,9 @@ const renderRecommendations = async (currentMovie) => {
 const renderMovieDetailPage = async () => {
     renderAds();
     const pathSegments = window.location.pathname.split('/');
-    const movieId = pathSegments.find(segment => segment.length > 15);
+    const movieId = pathSegments.find(segment => segment.length > 15 && !segment.includes('.'));
     if (!movieId) {
-        return (document.getElementById('error-message').style.display = 'block');
+        return (document.getElementById('error-message').style.display = 'block', document.getElementById('loading-spinner').style.display = 'none');
     }
 
     const loadingSpinner = document.getElementById('loading-spinner');
@@ -287,6 +287,8 @@ const renderMovieDetailPage = async () => {
         if (!movie) return errorMessage.style.display = 'block';
         
         const pageTitle = `${movie.title} (${movie.year}) - Flick Cinema`;
+        const pageDescription = `Download ${movie.title} (${movie.year}) in high quality. Category: ${movie.category}. Language: ${movie.language}.`;
+        const pageUrl = window.location.href;
         document.title = pageTitle;
         
         document.getElementById('movie-poster').src = movie.posterUrl;
