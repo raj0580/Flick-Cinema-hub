@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         elements.urlSlugInput.value = content.id;
-        elements.urlSlugInput.disabled = true; // Slugs cannot be changed after creation
+        elements.urlSlugInput.disabled = true;
         
         elements.isTrendingCheckbox.checked = content.isTrending === true;
         
@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const movieSlug = elements.urlSlugInput.value.trim();
         if (!elements.posterUrlInput.value) return showToast('Poster URL is required.', true);
         if (!movieSlug) return showToast('URL Slug is required.', true);
-
+        
         const getQualityGroupsData = (container) => [...container.querySelectorAll('.quality-group')].map(groupEl => ({quality: groupEl.querySelector('.quality-name-input').value.trim(), links: [...groupEl.querySelectorAll('.link-list .flex')].map(linkEl => ({size: linkEl.querySelector('.size-input').value.trim(), url: cleanDownloadUrl(linkEl.querySelector('.url-input').value.trim())})).filter(l => l.url)})).filter(g => g.quality && g.links.length > 0);
         const type = document.querySelector('input[name="type"]:checked').value;
         const movieData = {type, title: document.getElementById('title').value, year: Number(document.getElementById('year').value), description: document.getElementById('description').value, posterUrl: elements.posterUrlInput.value, trailerUrl: document.getElementById('trailer-url').value, language: document.getElementById('language').value, category: document.getElementById('category').value, quality: document.getElementById('quality').value.trim(), genres: [...document.querySelectorAll('.genre-checkbox:checked')].map(cb => cb.value), tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(Boolean), screenshots: [...elements.screenshotsContainer.querySelectorAll('.screenshot-url-input')].map(input => input.value.trim()).filter(Boolean), downloadLinks: getQualityGroupsData(elements.movieQualityGroupsContainer), isTrending: elements.isTrendingCheckbox.checked };
@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialLoad = async () => {
         elements.loadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
         try {
-            allMovies = await getMovies();
+            allMovies = (await getMovies());
             allMovies.sort((a,b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
             renderMoviesTable(1);
         } catch (error) { 
