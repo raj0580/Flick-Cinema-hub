@@ -34,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
 
-        // FIXED LINK
         linksHtml += `
             <a href="https://t.me/flickcinemaa" target="_blank" class="flex items-center justify-center bg-sky-500 hover:bg-sky-600 text-white font-bold p-2 rounded-lg transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
@@ -59,9 +58,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    loadComponent('header-placeholder', '/components/header.html')
+    loadComponent('/components/header.html')
         .then(() => {
             customizeHeaderLinks();
-            return loadComponent('footer-placeholder', '/components/footer.html');
+            return loadComponent('/components/footer.html');
         });
 });
