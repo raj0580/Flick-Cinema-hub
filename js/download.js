@@ -32,9 +32,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (popup) popup.addEventListener('click', (e) => { if (e.target === popup) hidePopup(); });
     
     const renderDownloadPage = async () => {
-        const params = new URLSearchParams(window.location.search);
-        const movieId = params.get('id');
-        if (!movieId) return window.location.href = 'index.html';
+        const pathSegments = window.location.pathname.split('/');
+        const movieId = pathSegments.find(segment => segment.length > 15);
+        if (!movieId) {
+            window.location.href = '/';
+            return;
+        }
 
         const loadingSpinner = document.getElementById('loading-spinner');
         const pageContent = document.getElementById('download-page-content');
@@ -68,10 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (movie.category) detailsHtml += `<div><strong>Category:</strong> <span class="text-gray-200">${movie.category}</span></div>`;
             if (movie.language) detailsHtml += `<div><strong>Language:</strong> <span class="text-gray-200">${movie.language}</span></div>`;
             detailsContainer.innerHTML = detailsHtml;
-
-            // --- THIS IS THE FIX ---
-            const screenshotsGrid = document.getElementById('screenshots-grid');
-            screenshotsGrid.innerHTML = (movie.screenshots || []).map(url => `<a href="${url}" target="_blank"><img src="${url}" class="w-full h-auto rounded-lg object-cover" alt="Screenshot"></a>`).join('');
+            
+            document.getElementById('screenshots-grid').innerHTML = (movie.screenshots || []).map(url => `<a href="${url}" target="_blank"><img src="${url}" class="w-full h-auto rounded-lg object-cover" alt="Screenshot"></a>`).join('');
 
             const downloadsContainer = document.getElementById('downloads-container');
             let downloadsHtml = '';
@@ -90,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span class="text-sm text-gray-400">${link.size}</span>
                                 <span class="bg-cyan-500 text-white text-sm font-bold py-1 px-3 rounded">Download</span>
                             </a>
-                            <div class="report-container text-center">
+                            <div class="report-container">
                                 <button class="report-link-btn text-xs px-2 py-1 ${isReported ? 'bg-gray-600 cursor-not-allowed' : 'bg-red-800/50 hover:bg-red-700'} rounded-lg" 
                                     data-movie-title="${movie.title}" 
                                     data-quality="${qualityLabel}" 
@@ -132,6 +133,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             downloadsContainer.addEventListener('click', async (e) => {
                 const downloadButton = e.target.closest('.download-link');
+                const reportButton = e.target.closest('.report-link-btn');
+
                 if (downloadButton) {
                     e.preventDefault();
                     showPopup();
@@ -142,8 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
                        if(reportContainer) reportContainer.classList.add('show');
                     }
                 }
-                
-                const reportButton = e.target.closest('.report-link-btn');
+
                 if (reportButton) {
                     const { movieTitle, quality, url } = reportButton.dataset;
                     reportButton.textContent = 'Reporting...';
@@ -168,6 +170,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if(errorMessage) errorMessage.style.display = 'block';
         }
     };
-
+    
     renderDownloadPage();
 });
