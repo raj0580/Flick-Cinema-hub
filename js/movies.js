@@ -1,4 +1,4 @@
-import { getMovies, getMovieById, addMovieRequest, getAds, addReport, getReports } from './db.js';
+import { getMovies, getMovieById, addMovieRequest, getAds } from './db.js';
 
 const initializeMoviePageSearch = () => {
     const observer = new MutationObserver((mutations, obs) => {
@@ -330,7 +330,7 @@ const renderMovieDetailPage = async () => {
 
 document.addEventListener('DOMContentLoaded', () => {
     const path = window.location.pathname;
-    if (path.endsWith('/') || path.endsWith('/index.html')) {
+    if (path.endsWith('/') || path.endsWith('/index.html') || path.includes('?search=') || path.includes('?page=')) {
         const urlParams = new URLSearchParams(window.location.search);
         const searchTerm = urlParams.get('search');
         renderHomepage(searchTerm);
