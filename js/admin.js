@@ -12,6 +12,15 @@ const cleanDownloadUrl = (rawUrl) => {
     } catch (e) { return rawUrl; }
 };
 
+const slugify = (text) => {
+    return text.toString().toLowerCase()
+        .replace(/\s+/g, '-')           
+        .replace(/[^\w\-]+/g, '')       
+        .replace(/\-\-+/g, '-')         
+        .replace(/^-+/, '')             
+        .replace(/-+$/, '');            
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     const elements = {
         movieForm: document.getElementById('movie-form'),
@@ -42,6 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
         adminSearchInput: document.getElementById('admin-search-input'),
         adminPaginationContainer: document.getElementById('admin-pagination-container'),
         isTrendingCheckbox: document.getElementById('isTrending'),
+        urlSlugInput: document.getElementById('url-slug'),
+        titleInput: document.getElementById('title'),
     };
 
     let editMode = false;
@@ -69,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.screenshotsContainer.innerHTML = ''; addScreenshotField();
         elements.movieQualityGroupsContainer.innerHTML = ''; addQualityGroupField(elements.movieQualityGroupsContainer);
         elements.episodesContainer.innerHTML = ''; addEpisodeField();
+        elements.urlSlugInput.disabled = false;
         window.scrollTo(0, 0);
     };
 
@@ -83,6 +95,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById(key);
             if (el && content[key]) el.value = content[key];
         });
+        
+        elements.urlSlugInput.value = content.id;
+        elements.urlSlugInput.disabled = true; // Slugs cannot be changed after creation
         
         elements.isTrendingCheckbox.checked = content.isTrending === true;
         
@@ -189,6 +204,12 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.seriesDownloadsSection.classList.toggle('hidden', !isSeries);
     };
 
+    elements.titleInput.addEventListener('input', () => {
+        if (!editMode) {
+            elements.urlSlugInput.value = slugify(elements.titleInput.value);
+        }
+    });
+
     document.body.addEventListener('click', (e) => {
         const target = e.target;
         if (target.matches('.poster-upload-btn')) target.nextElementSibling.click();
@@ -247,14 +268,21 @@ document.addEventListener('DOMContentLoaded', () => {
     
     elements.movieForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const movieSlug = elements.urlSlugInput.value.trim();
         if (!elements.posterUrlInput.value) return showToast('Poster URL is required.', true);
+        if (!movieSlug) return showToast('URL Slug is required.', true);
+
         const getQualityGroupsData = (container) => [...container.querySelectorAll('.quality-group')].map(groupEl => ({quality: groupEl.querySelector('.quality-name-input').value.trim(), links: [...groupEl.querySelectorAll('.link-list .flex')].map(linkEl => ({size: linkEl.querySelector('.size-input').value.trim(), url: cleanDownloadUrl(linkEl.querySelector('.url-input').value.trim())})).filter(l => l.url)})).filter(g => g.quality && g.links.length > 0);
         const type = document.querySelector('input[name="type"]:checked').value;
         const movieData = {type, title: document.getElementById('title').value, year: Number(document.getElementById('year').value), description: document.getElementById('description').value, posterUrl: elements.posterUrlInput.value, trailerUrl: document.getElementById('trailer-url').value, language: document.getElementById('language').value, category: document.getElementById('category').value, quality: document.getElementById('quality').value.trim(), genres: [...document.querySelectorAll('.genre-checkbox:checked')].map(cb => cb.value), tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(Boolean), screenshots: [...elements.screenshotsContainer.querySelectorAll('.screenshot-url-input')].map(input => input.value.trim()).filter(Boolean), downloadLinks: getQualityGroupsData(elements.movieQualityGroupsContainer), isTrending: elements.isTrendingCheckbox.checked };
         if (type === 'Web Series') movieData.episodes = [...elements.episodesContainer.querySelectorAll('.episode-field')].map(epEl => ({episodeTitle: epEl.querySelector('.episode-title-input').value.trim(), qualityGroups: getQualityGroupsData(epEl.querySelector('.quality-groups-container'))})).filter(ep => ep.episodeTitle && ep.qualityGroups.length > 0);
+        
         try {
-            if (editMode) await updateMovie(elements.movieIdInput.value, movieData);
-            else await addMovie(elements.movieIdInput.value, movieData);
+            if (editMode) {
+                await updateMovie(elements.movieIdInput.value, movieData);
+            } else {
+                await addMovie(movieSlug, movieData);
+            }
             showToast(`Content ${editMode ? 'updated' : 'added'} successfully!`);
             resetForm();
             initialLoad();
@@ -317,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialLoad = async () => {
         elements.loadingSpinner.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>`;
         try {
-            allMovies = (await getMovies());
+            allMovies = await getMovies();
             allMovies.sort((a,b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
             renderMoviesTable(1);
         } catch (error) { 
