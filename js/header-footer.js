@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadComponent = (id, url) => {
         return fetch(url)
             .then(response => {
-                if (!response.ok) throw new Error(`Failed to load ${url}`);
+                if (!response.ok) throw new Error(`Failed to load ${url}: ${response.statusText}`);
                 return response.text();
             })
             .then(data => {
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         linksHtml += `<a href="/index.html" class="text-gray-300 hover:text-cyan-400 transition hidden sm:block">Home</a>`;
 
-        if (pathname.includes('/movie.html') || pathname.includes('/download.html')) {
+        if (pathname.includes('/movie/') || pathname.includes('/download/')) {
             linksHtml += `
                 <button id="search-icon-btn" class="text-gray-300 hover:text-cyan-400 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -54,13 +54,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition">Logout</button>
             `;
         } else {
+            const logoLink = document.querySelector('header nav a');
+            if(logoLink) logoLink.href = "/index.html"; // Ensure logo always goes to homepage root
             navLinksContainer.innerHTML = linksHtml;
         }
     };
 
-    loadComponent('/components/header.html')
+    // --- THIS IS THE FIX ---
+    // Use absolute paths starting with "/"
+    loadComponent('header-placeholder', '/components/header.html')
         .then(() => {
             customizeHeaderLinks();
-            return loadComponent('/components/footer.html');
+            return loadComponent('footer-placeholder', '/components/footer.html');
         });
 });
