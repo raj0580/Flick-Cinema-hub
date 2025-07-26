@@ -1,4 +1,4 @@
-import { getMovies, getMovieById, addMovieRequest, getAds } from './db.js';
+import { getMovies, getMovieById, addMovieRequest, getAds, addReport, getReports } from './db.js';
 
 const initializeMoviePageSearch = () => {
     const observer = new MutationObserver((mutations, obs) => {
@@ -271,8 +271,8 @@ const renderRecommendations = async (currentMovie) => {
 const renderMovieDetailPage = async () => {
     renderAds();
     const pathSegments = window.location.pathname.split('/');
-    const movieId = pathSegments[pathSegments.length - 1];
-    if (!movieId || movieId === 'movie.html') {
+    const movieId = pathSegments.find(segment => segment.length > 10); // A simple way to find the Firestore ID
+    if (!movieId) {
         window.location.href = '/';
         return;
     }
@@ -287,8 +287,6 @@ const renderMovieDetailPage = async () => {
         if (!movie) return errorMessage.style.display = 'block';
         
         const pageTitle = `${movie.title} (${movie.year}) - Flick Cinema`;
-        const pageDescription = `Download ${movie.title} (${movie.year}) in high quality. Category: ${movie.category}. Language: ${movie.language}.`;
-        const pageUrl = window.location.href;
         document.title = pageTitle;
         
         document.getElementById('movie-poster').src = movie.posterUrl;
@@ -330,7 +328,7 @@ const renderMovieDetailPage = async () => {
 
 document.addEventListener('DOMContentLoaded', () => {
     const path = window.location.pathname;
-    if (path.endsWith('/') || path.endsWith('/index.html') || path.includes('?search=') || path.includes('?page=')) {
+    if (path.endsWith('/') || path.endsWith('/index.html') || window.location.search.includes('?page=') || window.location.search.includes('?search=')) {
         const urlParams = new URLSearchParams(window.location.search);
         const searchTerm = urlParams.get('search');
         renderHomepage(searchTerm);
