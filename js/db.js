@@ -1,5 +1,5 @@
 import { db } from './firebase-config.js';
-import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, orderBy, query } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, setDoc, orderBy, query } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const moviesCollection = collection(db, 'movies');
 const requestsCollection = collection(db, 'movie_requests');
@@ -15,9 +15,10 @@ export const getMovieById = async (id) => {
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
 };
-export const addMovie = async (movieData) => {
+export const addMovie = async (id, movieData) => {
     movieData.timestamp = new Date();
-    return await addDoc(moviesCollection, movieData);
+    // Use setDoc to create a document with a custom ID (our slug)
+    return await setDoc(doc(db, 'movies', id), movieData);
 };
 export const updateMovie = async (id, movieData) => {
     movieData.timestamp = new Date();
