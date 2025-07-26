@@ -1,40 +1,46 @@
-import { getMovies, getMovieById, addMovieRequest, getAds, addReport, getReports } from './db.js';
+import { getMovies, getMovieById, addMovieRequest, getAds } from './db.js';
 
-const initializePopup = () => {
-    let countdownInterval;
-    const popup = document.getElementById('telegram-popup');
-    if (!popup) return { showPopup: () => console.error("Popup not found") };
-    const closeBtn = document.getElementById('close-popup-btn');
-    const countdownSpan = document.getElementById('popup-countdown');
-
-    const showPopup = () => {
-        popup.classList.remove('hidden');
-        setTimeout(() => popup.classList.add('show'), 10);
-        let seconds = 15;
-        countdownSpan.textContent = seconds;
-        clearInterval(countdownInterval);
-        countdownInterval = setInterval(() => {
-            seconds--;
-            countdownSpan.textContent = seconds;
-            if (seconds <= 0) hidePopup();
-        }, 1000);
-    };
-
-    const hidePopup = () => {
-        if (!popup) return;
-        clearInterval(countdownInterval);
-        popup.classList.remove('show');
-        setTimeout(() => popup.classList.add('hidden'), 300);
-    };
-    
-    if (closeBtn) closeBtn.addEventListener('click', hidePopup);
-    if (popup) popup.addEventListener('click', (e) => { if (e.target === popup) hidePopup(); });
-    return { showPopup };
+const initializeMoviePageSearch = () => {
+    const observer = new MutationObserver((mutations, obs) => {
+        const searchIconBtn = document.getElementById('search-icon-btn');
+        if (searchIconBtn) {
+            const searchBarContainer = document.getElementById('search-bar-container');
+            let isSearchVisible = false;
+            const showSearchBar = () => {
+                searchBarContainer.innerHTML = `<div id="movie-page-search-bar" class="fixed top-[-100px] left-0 right-0 bg-gray-900/90 backdrop-blur-sm p-4 z-30 shadow-lg"><div class="container mx-auto"><form id="movie-page-search-form" class="flex gap-2"><input type="search" id="movie-page-search-input" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600" placeholder="Search for another movie..."><button type="submit" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-lg">Search</button></form></div></div>`;
+                setTimeout(() => {
+                    const searchBar = document.getElementById('movie-page-search-bar');
+                    if (searchBar) searchBar.style.top = '68px';
+                }, 10);
+                document.getElementById('movie-page-search-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const searchTerm = document.getElementById('movie-page-search-input').value;
+                    if (searchTerm) window.location.href = `index.html?search=${encodeURIComponent(searchTerm)}`;
+                });
+                isSearchVisible = true;
+            };
+            const hideSearchBar = () => {
+                const searchBar = document.getElementById('movie-page-search-bar');
+                if (searchBar) {
+                    searchBar.style.top = '-100px';
+                    setTimeout(() => { searchBarContainer.innerHTML = ''; }, 300);
+                }
+                isSearchVisible = false;
+            };
+            searchIconBtn.addEventListener('click', () => {
+                if (isSearchVisible) hideSearchBar();
+                else showSearchBar();
+            });
+            obs.disconnect();
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
 };
 
 const renderMovieCard = (movie) => {
     const tagsHtml = `<div class="absolute top-2 right-2 flex flex-wrap justify-end gap-2">${movie.type === 'Web Series' ? `<span class="bg-green-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">SERIES</span>` : ''}${movie.quality ? `<span class="bg-cyan-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">${movie.quality}</span>` : ''}</div>`;
-    return `<a href="movie.html?id=${movie.id}" class="group block bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-cyan-500/50 transition-shadow duration-300"><div class="relative"><img src="${movie.posterUrl}" alt="${movie.title}" class="w-full h-auto aspect-[2/3] object-cover transform group-hover:scale-105 transition-transform duration-300">${tagsHtml}</div><div class="p-3"><h3 class="text-md font-bold truncate group-hover:text-cyan-400">${movie.title}</h3><div class="text-xs text-gray-400 mt-1"><span>${movie.year}</span> •<span class="truncate">${(movie.genres || []).join(', ')}</span></div></div></a>`;
+    const trendingIcon = movie.isTrending ? `<div class="absolute bottom-2 left-2 text-yellow-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg></div>` : '';
+    return `<a href="movie.html?id=${movie.id}" class="group block bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-cyan-500/50 transition-shadow duration-300"><div class="relative"><img src="${movie.posterUrl}" alt="${movie.title}" class="w-full h-auto aspect-[2/3] object-cover transform group-hover:scale-105 transition-transform duration-300">${tagsHtml}${trendingIcon}</div><div class="p-3"><h3 class="text-md font-bold truncate group-hover:text-cyan-400">${movie.title}</h3><div class="text-xs text-gray-400 mt-1"><span>${movie.year}</span> •<span class="truncate">${(movie.genres || []).join(', ')}</span></div></div></a>`;
 };
 
 const renderAds = async () => {
@@ -133,7 +139,13 @@ const renderHomepage = async (initialSearchTerm = '') => {
         const selectedYear = document.getElementById('year-filter').value;
         const selectedCategory = document.getElementById('category-filter').value;
         let filtered = allMovies.filter(movie => ((movie.genres || []).includes(selectedGenre) || !selectedGenre) && movie.title.toLowerCase().includes(searchTerm) && (!selectedYear || movie.year == selectedYear) && (!selectedCategory || movie.category === selectedCategory));
-        filtered.sort((a, b) => (b.isTrending ? 1 : -1) - (a.isTrending ? 1 : -1) || b.year - a.year);
+        filtered.sort((a, b) => {
+            const aIsTrending = a.isTrending === true;
+            const bIsTrending = b.isTrending === true;
+            if (aIsTrending && !bIsTrending) return -1;
+            if (!aIsTrending && bIsTrending) return 1;
+            return b.year - a.year;
+        });
         displayMovies(filtered, currentPage);
     };
 
@@ -256,43 +268,6 @@ const renderRecommendations = async (currentMovie) => {
     }
 };
 
-const initializeMoviePageSearch = () => {
-    const observer = new MutationObserver((mutations, obs) => {
-        const searchIconBtn = document.getElementById('search-icon-btn');
-        if (searchIconBtn) {
-            const searchBarContainer = document.getElementById('search-bar-container');
-            let isSearchVisible = false;
-            const showSearchBar = () => {
-                searchBarContainer.innerHTML = `<div id="movie-page-search-bar" class="fixed top-[-100px] left-0 right-0 bg-gray-900/90 backdrop-blur-sm p-4 z-30 shadow-lg"><div class="container mx-auto"><form id="movie-page-search-form" class="flex gap-2"><input type="search" id="movie-page-search-input" class="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600" placeholder="Search for another movie..."><button type="submit" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-lg">Search</button></form></div></div>`;
-                setTimeout(() => {
-                    const searchBar = document.getElementById('movie-page-search-bar');
-                    if (searchBar) searchBar.style.top = '68px';
-                }, 10);
-                document.getElementById('movie-page-search-form').addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    const searchTerm = document.getElementById('movie-page-search-input').value;
-                    if (searchTerm) window.location.href = `index.html?search=${encodeURIComponent(searchTerm)}`;
-                });
-                isSearchVisible = true;
-            };
-            const hideSearchBar = () => {
-                const searchBar = document.getElementById('movie-page-search-bar');
-                if (searchBar) {
-                    searchBar.style.top = '-100px';
-                    setTimeout(() => { searchBarContainer.innerHTML = ''; }, 300);
-                }
-                isSearchVisible = false;
-            };
-            searchIconBtn.addEventListener('click', () => {
-                if (isSearchVisible) hideSearchBar();
-                else showSearchBar();
-            });
-            obs.disconnect();
-        }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-};
-
 const renderMovieDetailPage = async () => {
     renderAds();
     const params = new URLSearchParams(window.location.search);
@@ -302,24 +277,9 @@ const renderMovieDetailPage = async () => {
     const loadingSpinner = document.getElementById('loading-spinner');
     const movieContent = document.getElementById('movie-content');
     const errorMessage = document.getElementById('error-message');
-    const toast = document.getElementById('toast');
-    const { showPopup } = initializePopup();
-
-    const showToast = (message, isError = false) => {
-        if (!toast) return;
-        toast.textContent = message;
-        toast.className = 'fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transition-all duration-300';
-        toast.classList.add(isError ? 'bg-red-500' : 'bg-green-500', 'opacity-100', 'translate-y-0');
-        setTimeout(() => toast.classList.add('opacity-0', 'translate-y-full'), 3000);
-    };
 
     try {
-        const [movie, existingReports] = await Promise.all([
-            getMovieById(movieId),
-            getReports()
-        ]);
-
-        const reportedUrls = new Set(existingReports.map(report => report.brokenUrl));
+        const movie = await getMovieById(movieId);
         loadingSpinner.style.display = 'none';
         if (!movie) return errorMessage.style.display = 'block';
         document.title = `${movie.title} - Flick Cinema`;
@@ -347,87 +307,10 @@ const renderMovieDetailPage = async () => {
         
         document.getElementById('screenshots-grid').innerHTML = (movie.screenshots || []).map(url => `<a href="${url}" target="_blank"><img src="${url}" class="w-full h-auto rounded-lg object-cover" alt="Screenshot"></a>`).join('');
 
-        const downloadsContainer = document.getElementById('downloads-container');
-        let downloadsHtml = '';
-        
-        const renderLinkRow = (link, quality, index = null, isOldFormat = false) => {
-            const isReported = reportedUrls.has(link.url);
-            const linkLabel = isOldFormat ? quality : `Link ${index + 1}`;
-            const qualityLabel = isOldFormat ? quality : `${quality} - Link ${index + 1}`;
-            const bgClass = isOldFormat ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-900 hover:bg-gray-800';
-            
-            return `
-                <div class="link-wrapper mt-2">
-                    <div class="flex items-center gap-2">
-                        <a href="${link.url}" class="download-link flex-1 flex justify-between items-center ${bgClass} p-3 rounded-lg transition">
-                            <span class="font-semibold text-cyan-400">${linkLabel}</span>
-                            <span class="text-sm text-gray-400">${link.size}</span>
-                            <span class="bg-cyan-500 text-white text-sm font-bold py-1 px-3 rounded">Download</span>
-                        </a>
-                        <div class="report-container">
-                            <button class="report-link-btn text-xs px-2 py-1 ${isReported ? 'bg-gray-600 cursor-not-allowed' : 'bg-red-800/50 hover:bg-red-700'} rounded-lg" 
-                                data-movie-title="${movie.title}" 
-                                data-quality="${qualityLabel}" 
-                                data-url="${link.url}" 
-                                ${isReported ? 'disabled' : ''}>
-                                ${isReported ? 'Reported' : 'Report'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        };
-
-        const renderNewLinks = (groups) => (groups || []).map(group => `
-            <div class="mb-4">
-                <h4 class="text-md font-semibold text-gray-300 mb-3 border-b-2 border-gray-700 pb-1">${group.quality}</h4>
-                <div class="space-y-2 pl-2">
-                    ${(group.links || []).map((link, index) => renderLinkRow(link, group.quality, index, false)).join('')}
-                </div>
-            </div>`).join('');
-        
-        const renderOldLinks = (links) => links.map(link => renderLinkRow(link, link.quality, null, true)).join('');
-
-        const isNewFormat = movie.downloadLinks && movie.downloadLinks.length > 0 && typeof movie.downloadLinks[0].links !== 'undefined';
-        if (isNewFormat) {
-            downloadsHtml += `<div class="bg-gray-800/50 p-4 rounded-lg">${renderNewLinks(movie.downloadLinks)}</div>`;
-        } else if (movie.downloadLinks && movie.downloadLinks.length > 0) {
-             downloadsHtml += `<div class="bg-gray-800/50 p-4 rounded-lg space-y-3">${renderOldLinks(movie.downloadLinks)}</div>`;
+        const downloadBtn = document.getElementById('get-download-links-btn');
+        if (downloadBtn) {
+            downloadBtn.href = `download.html?id=${movieId}`;
         }
-        
-        downloadsContainer.innerHTML = downloadsHtml || '<p class="text-gray-400">No download links available.</p>';
-        
-        downloadsContainer.addEventListener('click', async (e) => {
-            const downloadButton = e.target.closest('.download-link');
-            if (downloadButton) {
-                e.preventDefault();
-                showPopup();
-                window.open(downloadButton.href, '_blank');
-                const wrapper = downloadButton.closest('.link-wrapper');
-                if(wrapper) {
-                   const reportContainer = wrapper.querySelector('.report-container');
-                   if(reportContainer) reportContainer.classList.add('show');
-                }
-            }
-            
-            const reportButton = e.target.closest('.report-link-btn');
-            if (reportButton) {
-                const { movieTitle, quality, url } = reportButton.dataset;
-                reportButton.textContent = 'Reporting...';
-                reportButton.disabled = true;
-                try {
-                    await addReport({ movieTitle, quality, brokenUrl: url, reportedAt: new Date() });
-                    showToast('Link reported. Thank you!');
-                    reportButton.textContent = 'Reported';
-                    reportButton.classList.remove('bg-red-800/50', 'hover:bg-red-700');
-                    reportButton.classList.add('bg-gray-600', 'cursor-not-allowed');
-                } catch (err) {
-                    showToast('Failed to report link.', true);
-                    reportButton.disabled = false;
-                    reportButton.textContent = 'Report';
-                }
-            }
-        });
 
         movieContent.style.display = 'block';
         renderRecommendations(movie);
