@@ -1,7 +1,5 @@
 import { getMovies, getMovieById, addMovieRequest, getAds, addReport, getReports } from './db.js';
 
-// --- This file now contains logic for index.html AND movie.html ---
-
 const initializeMoviePageSearch = () => {
     const observer = new MutationObserver((mutations, obs) => {
         const searchIconBtn = document.getElementById('search-icon-btn');
@@ -43,7 +41,8 @@ const initializeMoviePageSearch = () => {
 const renderMovieCard = (movie) => {
     const tagsHtml = `<div class="absolute top-2 right-2 flex flex-wrap justify-end gap-2">${movie.type === 'Web Series' ? `<span class="bg-green-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">SERIES</span>` : ''}${movie.quality ? `<span class="bg-cyan-500/90 text-white text-xs font-bold px-2 py-1 rounded shadow-md">${movie.quality}</span>` : ''}</div>`;
     const trendingIcon = movie.isTrending ? `<div class="absolute bottom-2 left-2 text-yellow-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg></div>` : '';
-    return `<a href="/movie/${movie.id}" class="group block bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-cyan-500/50 transition-shadow duration-300"><div class="relative"><img src="${movie.posterUrl}" alt="${movie.title}" class="w-full h-auto aspect-[2/3] object-cover transform group-hover:scale-105 transition-transform duration-300">${tagsHtml}${trendingIcon}</div><div class="p-3"><h3 class="text-md font-bold truncate group-hover:text-cyan-400">${movie.title}</h3><div class="text-xs text-gray-400 mt-1"><span>${movie.year}</span> •<span class="truncate">${(movie.genres || []).join(', ')}</span></div></div></a>`;
+    // --- THIS IS THE FIX ---
+    return `<a href="/movie.html?id=${movie.id}" class="group block bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-cyan-500/50 transition-shadow duration-300"><div class="relative"><img src="${movie.posterUrl}" alt="${movie.title}" class="w-full h-auto aspect-[2/3] object-cover transform group-hover:scale-105 transition-transform duration-300">${tagsHtml}${trendingIcon}</div><div class="p-3"><h3 class="text-md font-bold truncate group-hover:text-cyan-400">${movie.title}</h3><div class="text-xs text-gray-400 mt-1"><span>${movie.year}</span> •<span class="truncate">${(movie.genres || []).join(', ')}</span></div></div></a>`;
 };
 
 const renderAds = async () => {
@@ -287,8 +286,6 @@ const renderMovieDetailPage = async () => {
         if (!movie) return errorMessage.style.display = 'block';
         
         const pageTitle = `${movie.title} (${movie.year}) - Flick Cinema`;
-        const pageDescription = `Download ${movie.title} (${movie.year}) in high quality. Category: ${movie.category}. Language: ${movie.language}.`;
-        const pageUrl = window.location.href;
         document.title = pageTitle;
         
         document.getElementById('movie-poster').src = movie.posterUrl;
