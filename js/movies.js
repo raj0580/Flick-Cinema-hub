@@ -1,5 +1,34 @@
 import { getMovies, getMovieById, addMovieRequest, getAds, addReport, getReports } from './db.js';
 
+const updateMetaTags = (title, description, imageUrl, url) => {
+    document.title = title;
+    // Standard Meta Tags
+    const descTag = document.querySelector('meta[name="description"]');
+    if (descTag) descTag.setAttribute('content', description);
+    const canoTag = document.querySelector('link[rel="canonical"]');
+    if (canoTag) canoTag.setAttribute('href', url);
+
+    // Open Graph (Facebook, Telegram, etc.)
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', title);
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute('content', description);
+    const ogImage = document.querySelector('meta[property="og:image"]');
+    if (ogImage) ogImage.setAttribute('content', imageUrl);
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    if (ogUrl) ogUrl.setAttribute('content', url);
+
+    // Twitter Card
+    const twTitle = document.querySelector('meta[property="twitter:title"]');
+    if (twTitle) twTitle.setAttribute('content', title);
+    const twDesc = document.querySelector('meta[property="twitter:description"]');
+    if (twDesc) twDesc.setAttribute('content', description);
+    const twImage = document.querySelector('meta[property="twitter:image"]');
+    if (twImage) twImage.setAttribute('content', imageUrl);
+    const twUrl = document.querySelector('meta[property="twitter:url"]');
+    if (twUrl) twUrl.setAttribute('content', url);
+};
+
 const initializeMoviePageSearch = () => {
     const observer = new MutationObserver((mutations, obs) => {
         const searchIconBtn = document.getElementById('search-icon-btn');
@@ -16,7 +45,7 @@ const initializeMoviePageSearch = () => {
                 document.getElementById('movie-page-search-form').addEventListener('submit', (e) => {
                     e.preventDefault();
                     const searchTerm = document.getElementById('movie-page-search-input').value;
-                    if (searchTerm) window.location.href = `/?search=${encodeURIComponent(searchTerm)}`;
+                    if (searchTerm) window.location.href = `/index.html?search=${encodeURIComponent(searchTerm)}`;
                 });
                 isSearchVisible = true;
             };
@@ -289,17 +318,7 @@ const renderMovieDetailPage = async () => {
         const pageTitle = `Download ${movie.title} (${movie.year}) - Flick Cinema`;
         const pageDescription = `Download ${movie.title} (${movie.year}) Full Movie in HD. Category: ${movie.category}, Language: ${movie.language}. Genres: ${(movie.genres || []).join(', ')}.`;
         const pageUrl = window.location.href;
-        document.title = pageTitle;
-        document.querySelector('meta[name="description"]').setAttribute('content', pageDescription);
-        document.querySelector('link[rel="canonical"]').setAttribute('href', pageUrl);
-        document.querySelector('meta[property="og:title"]').setAttribute('content', pageTitle);
-        document.querySelector('meta[property="og:description"]').setAttribute('content', pageDescription);
-        document.querySelector('meta[property="og:image"]').setAttribute('content', movie.posterUrl);
-        document.querySelector('meta[property="og:url"]').setAttribute('content', pageUrl);
-        document.querySelector('meta[property="twitter:title"]').setAttribute('content', pageTitle);
-        document.querySelector('meta[property="twitter:description"]').setAttribute('content', pageDescription);
-        document.querySelector('meta[property="twitter:image"]').setAttribute('content', movie.posterUrl);
-        document.querySelector('meta[property="twitter:url"]').setAttribute('content', pageUrl);
+        updateMetaTags(pageTitle, pageDescription, movie.posterUrl, pageUrl);
         
         document.getElementById('movie-poster').src = movie.posterUrl;
         document.getElementById('movie-title').textContent = movie.title || '';
