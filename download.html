@@ -13,7 +13,13 @@
     <meta property="og:url" content="https://www.flickcinemahub.store/">
     <meta property="og:title" content="Download - Flick Cinema">
     <meta property="og:description" content="High-quality download links for your favorite movies and web series.">
-    <meta property="og:image" content="https://www.flickcinemahub.store/assets/og-image.png">
+    <meta property="og:image" content="https://www.flickcinemahub.store/assets/social-banner.png">
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://www.flickcinemahub.store/">
+    <meta property="twitter:title" content="Download - Flick Cinema">
+    <meta property="twitter:description" content="High-quality download links for your favorite movies and web series.">
+    <meta property="twitter:image" content="https://www.flickcinemahub.store/assets/social-banner.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
@@ -50,11 +56,10 @@
 
         <div id="error-message" class="text-center text-red-500 py-20 hidden"><h2 class="text-3xl">Content not found!</h2><p class="mt-4">The requested content could not be found.</p><a href="/" class="mt-6 inline-block bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded">Go to Homepage</a></div>
     </main>
-
     <div id="footer-placeholder"></div>
     <div id="telegram-popup" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
         <div class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 sm:p-8 text-center border-2 border-cyan-500/50 transform transition-all scale-95 opacity-0">
-            <button id="close-popup-btn" class="absolute top-3 right-4 text-2xl font-bold text-gray-400 hover:text-white">×</button>
+            <button id="close-popup-btn" class="absolute top-3 right-4 text-2xl font-bold text-gray-400 hover:text-white">&times;</button>
             <div class="w-16 h-16 mx-auto bg-sky-500 rounded-full flex items-center justify-center mb-4"><svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23l7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3L3.64 12c-.88-.25-.89-1.37.2-1.64l16.12-5.72c.78-.27 1.45.16 1.18 1.34l-2.83 13.25c-.28 1.3-1.02 1.6-2.03 1.01L12.6 16.3l-1.99 1.9c-.2.2-.4.4-.64.4z"></path></svg></div>
             <h2 class="text-2xl font-bold text-white mb-2">Join Our Community!</h2>
             <p class="text-gray-300 mb-6">Get the fastest updates and access to exclusive content on our Telegram channel.</p>
@@ -63,7 +68,6 @@
         </div>
     </div>
     <div id="toast" class="fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 translate-y-full transition-all duration-300"></div>
-
     <script type="module" src="/js/firebase-config.js"></script>
     <script type="module" src="/js/header-footer.js"></script>
     <script type="module" src="/js/download.js"></script>
