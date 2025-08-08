@@ -3,30 +3,20 @@ import { getMovies, getMovieById, addMovieRequest, getAds, addReport, getReports
 const updateMetaTags = (title, description, imageUrl, url) => {
     document.title = title;
     // Standard Meta Tags
-    const descTag = document.querySelector('meta[name="description"]');
-    if (descTag) descTag.setAttribute('content', description);
-    const canoTag = document.querySelector('link[rel="canonical"]');
-    if (canoTag) canoTag.setAttribute('href', url);
+    document.querySelector('meta[name="description"]').setAttribute('content', description);
+    document.querySelector('link[rel="canonical"]').setAttribute('href', url);
 
     // Open Graph (Facebook, Telegram, etc.)
-    const ogTitle = document.querySelector('meta[property="og:title"]');
-    if (ogTitle) ogTitle.setAttribute('content', title);
-    const ogDesc = document.querySelector('meta[property="og:description"]');
-    if (ogDesc) ogDesc.setAttribute('content', description);
-    const ogImage = document.querySelector('meta[property="og:image"]');
-    if (ogImage) ogImage.setAttribute('content', imageUrl);
-    const ogUrl = document.querySelector('meta[property="og:url"]');
-    if (ogUrl) ogUrl.setAttribute('content', url);
+    document.querySelector('meta[property="og:title"]').setAttribute('content', title);
+    document.querySelector('meta[property="og:description"]').setAttribute('content', description);
+    document.querySelector('meta[property="og:image"]').setAttribute('content', imageUrl);
+    document.querySelector('meta[property="og:url"]').setAttribute('content', url);
 
     // Twitter Card
-    const twTitle = document.querySelector('meta[property="twitter:title"]');
-    if (twTitle) twTitle.setAttribute('content', title);
-    const twDesc = document.querySelector('meta[property="twitter:description"]');
-    if (twDesc) twDesc.setAttribute('content', description);
-    const twImage = document.querySelector('meta[property="twitter:image"]');
-    if (twImage) twImage.setAttribute('content', imageUrl);
-    const twUrl = document.querySelector('meta[property="twitter:url"]');
-    if (twUrl) twUrl.setAttribute('content', url);
+    document.querySelector('meta[property="twitter:title"]').setAttribute('content', title);
+    document.querySelector('meta[property="twitter:description"]').setAttribute('content', description);
+    document.querySelector('meta[property="twitter:image"]').setAttribute('content', imageUrl);
+    document.querySelector('meta[property="twitter:url"]').setAttribute('content', url);
 };
 
 const initializeMoviePageSearch = () => {
@@ -45,7 +35,7 @@ const initializeMoviePageSearch = () => {
                 document.getElementById('movie-page-search-form').addEventListener('submit', (e) => {
                     e.preventDefault();
                     const searchTerm = document.getElementById('movie-page-search-input').value;
-                    if (searchTerm) window.location.href = `/index.html?search=${encodeURIComponent(searchTerm)}`;
+                    if (searchTerm) window.location.href = `/?search=${encodeURIComponent(searchTerm)}`;
                 });
                 isSearchVisible = true;
             };
@@ -359,12 +349,12 @@ const renderMovieDetailPage = async () => {
 
 document.addEventListener('DOMContentLoaded', () => {
     const path = window.location.pathname;
-    if (path.endsWith('/') || path.endsWith('/index.html') || window.location.search.includes('?page=') || window.location.search.includes('?search=')) {
+    if (document.getElementById('movie-grid')) {
         const urlParams = new URLSearchParams(window.location.search);
         const searchTerm = urlParams.get('search');
         renderHomepage(searchTerm);
         handleRequestForm();
-    } else if (path.includes('/movie/')) {
+    } else if (document.getElementById('movie-content')) {
         renderMovieDetailPage();
         initializeMoviePageSearch();
     }
